@@ -73,6 +73,7 @@ public class SellerAgent extends Agent {
 						//check if seller has it in stock
 						if(itemsForSale.containsKey(cd.getSerialNumber())) {
 							System.out.println("I have the CD in stock!");
+							
 						}
 						else {
 							System.out.println("CD out of stock");

@@ -6,7 +6,7 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="H:/eclipse-workspace/JADE-all-4.5.0/JADE-bin-4.5.0/jade/lib/jade.jar" sourcepath="E:/eclipse-workspace/JADE-all-4.5.0">
+	<classpathentry kind="lib" path="H:/eclipse-workspace/JADE-all-4.5.0/JADE-bin-4.5.0/jade/lib/jade.jar" sourcepath="D:/JADE-all-4.5.0">
 		<attributes>
 			<attribute name="javadoc_location" value="file:/Users/simonpowers/Dropbox/JADE_Javadoc/"/>
 		</attributes>

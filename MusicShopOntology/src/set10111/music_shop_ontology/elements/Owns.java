@@ -8,6 +8,7 @@ import jade.content.Predicate;
 import jade.core.AID;
 
 public class Owns implements Predicate {
+	
 	private AID owner;
 	private Item item;
 	

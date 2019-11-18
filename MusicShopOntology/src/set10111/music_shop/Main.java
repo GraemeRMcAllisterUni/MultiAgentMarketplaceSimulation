@@ -1,6 +1,7 @@
 package set10111.music_shop;
 import jade.core.*;
 import jade.core.Runtime;
+import jade.tools.sniffer.Sniffer;
 import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 
@@ -25,6 +26,13 @@ public class Main {
 			AgentController recklessBuyerAgent = myContainer.createNewAgent("reckless buyer", RecklessBuyerAgent.class.getCanonicalName(),
 					null);
 			recklessBuyerAgent.start();
+			
+			
+			AgentController snifferDog = myContainer.createNewAgent("Sniffer Dog", Sniffer.class.getCanonicalName(),
+					null);
+			snifferDog.start();
+			
+			
 			
 		}
 		catch(Exception e){

@@ -10,19 +10,30 @@ import jade.content.onto.annotations.AggregateSlot;
 import jade.content.onto.annotations.Slot;
 
 public class Device extends Item {
-	private String name;
+		
+	protected String deviceType;
+	
+	protected int noOfComponents = 3;
+	
+
+	public int getComponentsNo() {		
+		return noOfComponents;
+	}
+	
+	
 	private List<Component> components;
 	
 	@Slot(mandatory = true)
 	public String getName() {
-		return name;
+		return deviceType.toString();
 	}
 	
-	public void setName(String name) {
-		this.name = name;
+	public void setName(String deviceType) {
+		
+		this.deviceType = deviceType;
 	}
 	
-	@AggregateSlot(cardMin = 1)
+	@AggregateSlot(cardMin = 4)
 	public List<Component> getComponents() {
 		return components;
 	}
