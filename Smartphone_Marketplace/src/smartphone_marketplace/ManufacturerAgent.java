@@ -24,6 +24,8 @@ public class ManufacturerAgent extends Agent{
 	public void setup() {
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);
+		
+		addBehaviour(new OrderRequest());
 	}
 
 	private class QueryBehaviour extends CyclicBehaviour{
@@ -40,13 +42,14 @@ public class ManufacturerAgent extends Agent{
 	private class OrderRequest extends CyclicBehaviour{
 		@Override
 		public void action() {
+
 			//This behaviour should only respond to REQUEST messages
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST); 
 			ACLMessage msg = receive(mt);
 			if(msg != null){
 				try {
 					ContentElement ce = null;
-					System.out.println(msg.getContent());
+					//System.out.println(msg.getContent());
 					ce = getContentManager().extractContent(msg);
 					if(ce instanceof Action) {
 						Concept action = ((Action)ce).getAction();
@@ -54,9 +57,8 @@ public class ManufacturerAgent extends Agent{
 							Order order = (Order)action;
 							Device device = order.getDevice();
 							
-							
-							
-							
+							device.toString();
+													
 						}
 					}
 				}

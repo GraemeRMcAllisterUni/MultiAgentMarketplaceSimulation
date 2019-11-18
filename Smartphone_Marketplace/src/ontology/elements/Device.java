@@ -3,7 +3,7 @@
  */
 package ontology.elements;
 
-import java.awt.Component;
+import java.util.ArrayList;
 import java.util.List;
 
 import jade.content.onto.annotations.AggregateSlot;
@@ -15,22 +15,22 @@ public class Device extends Item {
 	
 	protected int noOfComponents = 3;
 	
+	protected List<Component> components;// = new ArrayList<Component>();
 
 	public int getComponentsNo() {		
 		return noOfComponents;
 	}
 	
 	
-	private List<Component> components;
 	
 	@Slot(mandatory = true)
 	public String getName() {
 		return deviceType.toString();
 	}
 	
-	public void setName(String deviceType) {
-		
+	public void setName(String deviceType) {		
 		this.deviceType = deviceType;
+		this.components = new ArrayList<Component>();
 	}
 	
 	@AggregateSlot(cardMin = 4)
@@ -41,6 +41,12 @@ public class Device extends Item {
 	public void setComponents(List<Component> components) {
 		this.components = components;
 	}
+	
+	public void setComponent(Component component) {
+		this.components.add(component);
+	}
+
+
 	
 }
 

@@ -6,6 +6,11 @@ public class Component extends Item {
 	private String type;	
 	private String spec;
 	
+	public Component(String type, String spec) {
+		setType(type);
+		setSpec(spec);		
+	}
+
 	@Slot(mandatory = true)
 	public String getType() {
 		return type;
