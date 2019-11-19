@@ -53,11 +53,13 @@ public class ManufacturerAgent extends Agent{
 					ce = getContentManager().extractContent(msg);
 					if(ce instanceof Action) {
 						Concept action = ((Action)ce).getAction();
-						if (action instanceof Order) {							
-							Order order = (Order)action;
-							Device device = order.getDevice();
+						if (action instanceof PlaceOrder) {							
+							PlaceOrder order = (PlaceOrder)action;
+							OrderDetails details = order.getOrderDetails();
 							
-							device.toString();
+							
+							
+							//device.toString();
 													
 						}
 					}

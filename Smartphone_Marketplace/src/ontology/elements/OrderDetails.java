@@ -3,10 +3,10 @@ package ontology.elements;
 import java.util.ArrayList;
 import java.util.List;
 
-import jade.content.AgentAction;
+import jade.content.Concept;
 import jade.content.onto.annotations.AggregateSlot;
 
-public class Order implements AgentAction{
+public class OrderDetails implements Concept{
 	private double Price;
 	private double Fee;
 		
@@ -16,13 +16,13 @@ public class Order implements AgentAction{
 		List <Device> Devices;
 
 
-	public Order(Device device, double quantity, double price, double fee) {
-		Price = price;
-		Fee = fee;
+	public OrderDetails(Device device, double quantity, double price, double fee) {
+		this.Price = price;
+		this.Fee = fee;
 		this.Devices = new ArrayList<Device>();
 		for(double i = 0; i<quantity; i++)
 		{
-			Devices.add(device);
+			this.Devices.add(device);
 		}		
 	}
 	
