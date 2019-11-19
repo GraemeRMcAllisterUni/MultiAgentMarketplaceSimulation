@@ -45,8 +45,12 @@ public class Device extends Item {
 	public void setComponent(Component component) {
 		this.components.add(component);
 	}
-
-
+	
+	public String toString() {
+		
+		return getName();	
+		
+	}
 	
 }
 

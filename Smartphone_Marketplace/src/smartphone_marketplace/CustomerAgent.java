@@ -29,7 +29,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 
 
 
-public class CustomerAgent extends Agent {
+public class CustomerAgent extends Agent  {
 	private AID manufacturerAID;
 	private AID tickerAgent;
 	private Codec codec = new SLCodec();
@@ -37,13 +37,31 @@ public class CustomerAgent extends Agent {
 	//stock list, with serial number as the key
 
 	protected void setup(){
+		
+		getContentManager().registerLanguage(codec);
+		getContentManager().registerOntology(ontology);
+		
+		DFAgentDescription dfd = new DFAgentDescription();
+		dfd.setName(getAID());
+		ServiceDescription sd = new ServiceDescription();
+		
+		sd.setType("customer");
+		sd.setName(getLocalName() + "-customer-agent");
+		
+		dfd.addServices(sd);
+		try{
+			DFService.register(this, dfd);
+		}
+		catch(FIPAException e){
+			e.printStackTrace();
+		}
+		
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);
 
 		manufacturerAID = new AID("Manufacturer",AID.ISLOCALNAME);	
 		addBehaviour(new RequestOrder());
 		addBehaviour(new TickerWaiter(this));
-		System.out.println("newday");
 		//addBehaviour(new SellBehaviour());
 
 	}
@@ -145,7 +163,7 @@ public class CustomerAgent extends Agent {
 			
 			PlaceOrder order = new PlaceOrder();
 			
-			order.setManufacturer(myAgent.getAID());
+			order.setCustomer(myAgent.getAID());
 			order.setItem(orderDetails);
 
 			Action requestOrder = new Action();

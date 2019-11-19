@@ -28,5 +28,12 @@ public class Component extends Item {
 	public void setSpec(String spec) {
 		this.spec = spec;
 	}
+	
+	public String toString() {
+				
+		return getType() + " " + getSpec();
+	
+		
+	}
 		
 }

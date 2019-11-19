@@ -54,7 +54,7 @@ public class DayTicker extends Agent {
 		private int step = 0;
 		private int numFinReceived = 0; //finished messages from other agents
 		private int day = 0;
-		private ArrayList<AID> simulationAgents = new ArrayList<>();
+		private ArrayList<AID> marketplaceAgents = new ArrayList<>();
 		/**
 		 * @param a	the agent executing the behaviour
 		 */
@@ -78,11 +78,11 @@ public class DayTicker extends Agent {
 				try{
 					DFAgentDescription[] agentsType1  = DFService.search(myAgent,template1); 
 					for(int i=0; i<agentsType1.length; i++){
-						simulationAgents.add(agentsType1[i].getName()); // this is the AID
+						marketplaceAgents.add(agentsType1[i].getName()); // this is the AID
 					}
 					DFAgentDescription[] agentsType2  = DFService.search(myAgent,template2); 
 					for(int i=0; i<agentsType2.length; i++){
-						simulationAgents.add(agentsType2[i].getName()); // this is the AID
+						marketplaceAgents.add(agentsType2[i].getName()); // this is the AID
 					}
 				}
 				catch(FIPAException e) {
@@ -91,7 +91,7 @@ public class DayTicker extends Agent {
 				//send new day message to each agent
 				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
 				tick.setContent("new day");
-				for(AID id : simulationAgents) {
+				for(AID id : marketplaceAgents) {
 					tick.addReceiver(id);
 				}
 				myAgent.send(tick);
@@ -104,7 +104,7 @@ public class DayTicker extends Agent {
 				ACLMessage msg = myAgent.receive(mt);
 				if(msg != null) {
 					numFinReceived++;
-					if(numFinReceived >= simulationAgents.size()) {
+					if(numFinReceived >= marketplaceAgents.size()) {
 						step++;
 					}
 				}
@@ -125,7 +125,7 @@ public class DayTicker extends Agent {
 		public void reset() {
 			super.reset();
 			step = 0;
-			simulationAgents.clear();
+			marketplaceAgents.clear();
 			numFinReceived = 0;
 		}
 
@@ -137,7 +137,7 @@ public class DayTicker extends Agent {
 				//send termination message to each agent
 				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 				msg.setContent("terminate");
-				for(AID agent : simulationAgents) {
+				for(AID agent : marketplaceAgents) {
 					msg.addReceiver(agent);
 				}
 				myAgent.send(msg);

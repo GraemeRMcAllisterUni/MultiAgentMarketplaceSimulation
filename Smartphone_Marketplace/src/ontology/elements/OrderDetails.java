@@ -13,22 +13,28 @@ public class OrderDetails implements Concept{
 	private boolean Fulfilled;
 		
 		@AggregateSlot(cardMin = 1)
-		List <Device> Devices;
+		List <Device> devices;
 
 
 	public OrderDetails(Device device, double quantity, double price, double fee) {
-		this.Price = price;
-		this.Fee = fee;
-		this.Devices = new ArrayList<Device>();
+		Price = price;
+		Fee = fee;
+		devices = new ArrayList<Device>();
 		for(double i = 0; i<quantity; i++)
 		{
-			this.Devices.add(device);
+			devices.add(device);
 		}		
 	}
 	
 	public Device getDevice()
 	{
-		return Devices.get(0);
+		return devices.get(0);
 	}
+	
+	/*public String toString()
+	{		
+		return String.valueOf(devices.size()) + getDevice() + "s"; 
+	}
+	*/
 
 }

@@ -10,6 +10,10 @@ import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import ontology.MarketplaceOntology;
@@ -22,8 +26,24 @@ public class ManufacturerAgent extends Agent{
 	private Ontology ontology = MarketplaceOntology.getInstance();
 
 	public void setup() {
+		
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);
+		
+		DFAgentDescription dfd = new DFAgentDescription();
+		dfd.setName(getAID());
+		ServiceDescription sd = new ServiceDescription();
+		
+		sd.setType("manufacturer");
+		sd.setName(getLocalName() + "-manufacturer-agent");
+		
+		dfd.addServices(sd);
+		try{
+			DFService.register(this, dfd);
+		}
+		catch(FIPAException e){
+			e.printStackTrace();
+		}
 		
 		addBehaviour(new OrderRequest());
 	}
@@ -57,9 +77,7 @@ public class ManufacturerAgent extends Agent{
 							PlaceOrder order = (PlaceOrder)action;
 							OrderDetails details = order.getOrderDetails();
 							
-							
-							
-							//device.toString();
+							System.out.println(order.toString());
 													
 						}
 					}
