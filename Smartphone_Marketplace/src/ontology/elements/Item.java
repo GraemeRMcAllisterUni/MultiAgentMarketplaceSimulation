@@ -6,15 +6,15 @@ import jade.content.onto.annotations.Slot;
 
 public class Item implements Concept {
 	
-	private int serialNumber;
+	private int orderNumber;
 	@Slot (mandatory = true)
-	public int getSerialNumber() {
-		return serialNumber;
+	public int getOrderNumber() {
+		return orderNumber;
 	}
 
 	
-	public void setSerialNumber(int serialNumber) {
-		this.serialNumber = serialNumber;
+	public void setOrderNumber(int orderNumber) {
+		this.orderNumber = orderNumber;
 	}
 	
 }

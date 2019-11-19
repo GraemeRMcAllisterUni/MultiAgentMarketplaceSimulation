@@ -10,6 +10,10 @@ public class Component extends Item {
 		setType(type);
 		setSpec(spec);		
 	}
+	
+	public Component(){
+		super();
+	}
 
 	@Slot(mandatory = true)
 	public String getType() {

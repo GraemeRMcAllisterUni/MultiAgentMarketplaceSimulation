@@ -4,10 +4,11 @@ package ontology.elements;
 import jade.content.AgentAction;
 import jade.core.AID;
 import ontology.elements.OrderDetails;
+import ontology.elements.Item;
 
 public class PlaceOrder implements AgentAction {
 	private AID customer;
-	private OrderDetails orderDetails;
+	private Item item;
 	
 	public AID getCustomer() {
 		return customer;
@@ -17,19 +18,12 @@ public class PlaceOrder implements AgentAction {
 		this.customer = customer;
 	}
 	
-	public OrderDetails getOrderDetails() {
-		return orderDetails;
+	public Item getItem() {
+		return item;
 	}
 	
-	public void setItem(OrderDetails orderDetails) {
-		this.orderDetails = orderDetails;
+	public void setItem(Item item) {
+		this.item = item;
 	}	
-	
-	/*
-	public String toString()
-	{		
-		return this.orderDetails.toString();
-	}
-	*/
 	
 }

@@ -56,8 +56,7 @@ public class CustomerAgent extends Agent  {
 			e.printStackTrace();
 		}
 		
-		getContentManager().registerLanguage(codec);
-		getContentManager().registerOntology(ontology);
+
 
 		manufacturerAID = new AID("Manufacturer",AID.ISLOCALNAME);	
 		addBehaviour(new RequestOrder());
@@ -116,6 +115,7 @@ public class CustomerAgent extends Agent  {
 
 
 
+
 			Device device = new Device();
 			//double[] components = {Math.random(),Math.random(),Math.random()};
 			{
@@ -161,17 +161,25 @@ public class CustomerAgent extends Agent  {
 
 			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee);
 			
-			PlaceOrder order = new PlaceOrder();
-			
+			/*
+			orderDetails.setDevice(device);
+			orderDetails.setQuantity(quantity);
+			orderDetails.setFee(fee);
+			orderDetails.setPrice(price);
+			*/
+						
+			PlaceOrder order = new PlaceOrder();			
 			order.setCustomer(myAgent.getAID());
 			order.setItem(orderDetails);
 
 			Action requestOrder = new Action();
 			requestOrder.setAction(order);
 			requestOrder.setActor(manufacturerAID);
+						
 			try {
 				// Let JADE convert from Java objects to string
 				getContentManager().fillContent(msg, requestOrder); //send the wrapper object
+				System.out.println(requestOrder);
 				send(msg);
 			}
 			catch (CodecException ce) {

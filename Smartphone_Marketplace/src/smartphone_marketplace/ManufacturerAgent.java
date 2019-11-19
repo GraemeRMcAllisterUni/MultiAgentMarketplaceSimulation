@@ -69,15 +69,18 @@ public class ManufacturerAgent extends Agent{
 			if(msg != null){
 				try {
 					ContentElement ce = null;
-					//System.out.println(msg.getContent());
+					System.out.println(msg.getContent());
 					ce = getContentManager().extractContent(msg);
 					if(ce instanceof Action) {
 						Concept action = ((Action)ce).getAction();
-						if (action instanceof PlaceOrder) {							
+						if (action instanceof PlaceOrder) {
 							PlaceOrder order = (PlaceOrder)action;
-							OrderDetails details = order.getOrderDetails();
+							Item it = order.getItem();
+							if(it instanceof OrderDetails){
+								OrderDetails od = (OrderDetails)it;
 							
-							System.out.println(order.toString());
+							System.out.println(od.toString());
+							}
 													
 						}
 					}
