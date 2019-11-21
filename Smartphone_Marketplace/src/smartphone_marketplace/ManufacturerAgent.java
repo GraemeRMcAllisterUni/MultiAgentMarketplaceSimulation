@@ -26,33 +26,39 @@ import ontology.MarketplaceOntology;
 import ontology.elements.*;
 
 public class ManufacturerAgent extends Agent{
-	
+
+
+	private List<AID> supplierAgents = new ArrayList<>();
 	private AID tickerAgent;
 	private AID customerAID;
 	private Codec codec = new SLCodec();
 	private Ontology ontology = MarketplaceOntology.getInstance();
 
 	public void setup() {
-		
+
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);
-		
+
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		ServiceDescription sd = new ServiceDescription();
-		
 		sd.setType("manufacturer");
 		sd.setName(getLocalName() + "-manufacturer-agent");
-		
 		dfd.addServices(sd);
 		try{
 			DFService.register(this, dfd);
 		}
 		catch(FIPAException e){
 			e.printStackTrace();
+
 		}
-		
-		addBehaviour(new OrderRequest());
+
+
+
+
+
+
+		addBehaviour(new TickerWaiter(this));
 	}
 	public class TickerWaiter extends CyclicBehaviour {
 
@@ -71,13 +77,14 @@ public class ManufacturerAgent extends Agent{
 					tickerAgent = msg.getSender();
 				}
 				if(msg.getContent().equals("new day")) {
+					System.out.println("Manufacturer heard new day from ticker agent");
 					//spawn new sequential behaviour for day's activities
 					CyclicBehaviour or = new OrderRequest();
 					myAgent.addBehaviour(or);
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
 					cyclicBehaviours.add(or);
 					myAgent.addBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
-					
+
 
 				}
 				else {
@@ -91,11 +98,11 @@ public class ManufacturerAgent extends Agent{
 		}
 
 	}
-	
+
 	public class EndDayListener extends CyclicBehaviour {
 		private int buyersFinished = 0;
 		private List<Behaviour> toRemove;
-		
+
 		public EndDayListener(Agent a, List<Behaviour> toRemove) {
 			super(a);
 			this.toRemove = toRemove;
@@ -103,27 +110,46 @@ public class ManufacturerAgent extends Agent{
 
 		@Override
 		public void action() {
+
 			MessageTemplate mt = MessageTemplate.MatchContent("done");
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg != null) {
-				buyersFinished++;
+				ACLMessage msgSupplier = new ACLMessage(ACLMessage.INFORM);
+				DFAgentDescription agentDesc = new DFAgentDescription();
+				ServiceDescription serviceDesc = new ServiceDescription();
+				serviceDesc.setType("supplier");
+				agentDesc.addServices(serviceDesc);
+				try{
+					DFAgentDescription[] agentsFound  = DFService.search(myAgent,agentDesc); 
+
+					for(DFAgentDescription aF : agentsFound)
+						supplierAgents.add(aF.getName()); // this is the AID
+				}
+				catch(Exception e)
+				{}
+
+				for(AID agent : supplierAgents) {
+					msgSupplier.addReceiver(agent);
+				}
+				myAgent.send(msgSupplier);
+
 			}
 			else {
 				block();
 			}
-				//we are finished
-				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-				tick.setContent("done");
-				tick.addReceiver(tickerAgent);
-				myAgent.send(tick);
-				//remove behaviours
-				for(Behaviour b : toRemove) {
-					myAgent.removeBehaviour(b);
-				}
-				myAgent.removeBehaviour(this);
-			
+			//we are finished
+			ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+			tick.setContent("done");
+			tick.addReceiver(tickerAgent);
+			myAgent.send(tick);
+			//remove behaviours
+			for(Behaviour b : toRemove) {
+				myAgent.removeBehaviour(b);
+			}
+			myAgent.removeBehaviour(this);
+
 		}
-		
+
 	}
 
 	private class OrderRequest extends CyclicBehaviour{
@@ -145,10 +171,19 @@ public class ManufacturerAgent extends Agent{
 							Item it = order.getItem();
 							if(it instanceof OrderDetails){
 								OrderDetails od = (OrderDetails)it;
+								
+								Device d = od.getDevice();
+								System.out.println("Order received: " + d.toString());
+								int i = 0;
+								
+								System.out.println("Components size: "+Integer.toString(d.getComponents().size()));
 							
-							System.out.println(od.toString());
+								for(Component c : (List<Component>)od.getDevice().getComponents())
+								{														
+									System.out.println(c.toString());
+								}
+									
 							}
-													
 						}
 					}
 				}

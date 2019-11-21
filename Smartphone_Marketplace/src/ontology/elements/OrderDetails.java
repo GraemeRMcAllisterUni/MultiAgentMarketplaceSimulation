@@ -66,11 +66,4 @@ public class OrderDetails extends Item{
 	}
 	
 
-	
-	/*public String toString()
-	{		
-		return String.valueOf(devices.size()) + getDevice() + "s"; 
-	}
-	*/
-
 }

@@ -35,7 +35,7 @@ public class DayTicker extends Agent {
 			e.printStackTrace();
 		}
 		//wait for the other agents to start
-		doWait(5000);
+		doWait(1000);
 		addBehaviour(new SynchAgentsBehaviour(this));
 	}
 
@@ -70,9 +70,10 @@ public class DayTicker extends Agent {
 			case 0:
 				System.out.println("Setting up day " + day);
 				//find all agents using directory service
-				List<String> agents =  Arrays.asList("customer", "manufacturer", "supplier", "postman");
+				List<String> agents =  Arrays.asList("customer", "manufacturer", "supplier"/*, "postman"*/);
 				for(String a : agents)
 				{
+					System.out.println(a);
 					DFAgentDescription agentDesc = new DFAgentDescription();
 					ServiceDescription serviceDesc = new ServiceDescription();
 					serviceDesc.setType(a);
@@ -80,14 +81,16 @@ public class DayTicker extends Agent {
 					try{
 						DFAgentDescription[] agentsFound  = DFService.search(myAgent,agentDesc); 
 						
-						for(DFAgentDescription aF : agentsFound)
+						for(DFAgentDescription aF : agentsFound) {
 							marketplaceAgents.add(aF.getName()); // this is the AID						
-
+							System.out.println(aF.getName());
+						}
 					}
 					catch(FIPAException e) {
 						e.printStackTrace();
 					}
 				}
+		
 
 				//send new day message to each agent
 				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);

@@ -13,14 +13,11 @@ public class Device extends Item {
 		
 	protected String deviceType;
 	
-	protected int noOfComponents = 3;
-	
 	protected List<Component> components;// = new ArrayList<Component>();
 
-	public int getComponentsNo() {		
-		return noOfComponents;
+	public Device(){
+		super();
 	}
-	
 	
 	
 	@Slot(mandatory = true)
@@ -32,24 +29,22 @@ public class Device extends Item {
 		this.deviceType = deviceType;
 		this.components = new ArrayList<Component>();
 	}
+
 	
-	@AggregateSlot(cardMin = 4)
-	public List<Component> getComponents() {
-		return components;
+	public void setComponents(List<Component> comps) {
+		this.components = comps;
 	}
 	
-	public void setComponents(List<Component> components) {
-		this.components = components;
+	public List<Component> getComponents() {
+		return components;
 	}
 	
 	public void setComponent(Component component) {
 		this.components.add(component);
 	}
 	
-	public String toString() {
-		
-		return getName();	
-		
+	public String toString() {		
+		return getName();			
 	}
 	
 }

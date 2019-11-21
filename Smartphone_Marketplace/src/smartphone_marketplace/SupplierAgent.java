@@ -1,13 +1,18 @@
 package smartphone_marketplace;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import jade.content.lang.Codec;
 import jade.content.lang.sl.SLCodec;
 import jade.content.onto.Ontology;
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
@@ -23,10 +28,20 @@ public class SupplierAgent extends Agent {
 	private Ontology ontology = MarketplaceOntology.getInstance();
 
 	protected void setup(){
+		
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		ServiceDescription sd = new ServiceDescription();
 		sd.setType("supplier");
+		sd.setName(getLocalName() + "-supplier-agent");
+		dfd.addServices(sd);
+		try{
+			DFService.register(this, dfd);
+		}
+		catch(FIPAException e){
+			e.printStackTrace();
+		}
+		
 		///Component c = new Componenet();	
 		
 		HashMap<Component, Double> stock = new HashMap<Component, Double>();
@@ -84,16 +99,10 @@ public class SupplierAgent extends Agent {
 					tickerAgent = msg.getSender();
 				}
 				if(msg.getContent().equals("new day")) {
-					System.out.println("new day");
-					/*
-					myAgent.addBehaviour(new BookGenerator());
-					myAgent.addBehaviour(new FindBuyers(myAgent));
-					CyclicBehaviour os = new OffersServer(myAgent);
-					myAgent.addBehaviour(os);
+					System.out.println("new day as supplier" + myAgent.getName());
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
-					cyclicBehaviours.add(os);
-					myAgent.addBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
-					 */
+					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
+					 
 				}
 				else {
 					//termination message to end simulation
@@ -106,5 +115,37 @@ public class SupplierAgent extends Agent {
 		}
 
 	}
+	
+	public class EndDayListener extends CyclicBehaviour {
+		private int buyersFinished = 0;
+		private List<Behaviour> toRemove;
+		
+		public EndDayListener(Agent a, List<Behaviour> toRemove) {
+			super(a);
+			this.toRemove = toRemove;
+		}
 
-}
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.MatchContent("done");
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				buyersFinished++;
+			}
+			else {
+				block();
+			}
+
+				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+				tick.setContent("done");
+				tick.addReceiver(tickerAgent);
+				myAgent.send(tick);
+				//remove behaviours
+				for(Behaviour b : toRemove) {
+					myAgent.removeBehaviour(b);
+				}
+				myAgent.removeBehaviour(this);
+			}
+		}
+		
+	}

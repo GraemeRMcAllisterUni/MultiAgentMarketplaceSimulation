@@ -78,6 +78,7 @@ public class CustomerAgent extends Agent  {
 					tickerAgent = msg.getSender();
 				}
 				if(msg.getContent().equals("new day")) {
+					System.out.println("New Day received from Ticker");
 					//spawn new sequential behaviour for day's activities
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
 					dailyActivity.addSubBehaviour(new EndDay(myAgent));
