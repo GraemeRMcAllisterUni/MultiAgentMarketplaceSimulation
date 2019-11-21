@@ -14,12 +14,27 @@ public class OrderDetails extends Item{
 	private double Quantity;	
 	private boolean Fulfilled;
 	private	Device device;
+	private Component[] components = new Component[4];
 	
 	
 	public void setPrice(double price) {
 		
 		this.Price = price;		
 	}
+	
+	public Component[] getComponents() {
+		
+		return components;	
+	}
+	
+	public void setComponents(Component[] c)
+	{
+//		int i=0;
+//		for(Component comp : components) {i++;}
+		this.components = c;
+	}
+	
+	
 	
 	public double getPrice() {
 		
@@ -54,11 +69,12 @@ public class OrderDetails extends Item{
 	}
 	
 
-	public OrderDetails(Device d, double quantity, double price, double fee) {
+	public OrderDetails(Device d, double quantity, double price, double fee, Component[] c) {
 		Price = price;
 		Fee = fee;
 		device = d;
-		Quantity = quantity;	
+		Quantity = quantity;
+		components = c;
 	}
 	
 	public OrderDetails() {

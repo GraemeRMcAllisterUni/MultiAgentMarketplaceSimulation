@@ -171,17 +171,14 @@ public class ManufacturerAgent extends Agent{
 							Item it = order.getItem();
 							if(it instanceof OrderDetails){
 								OrderDetails od = (OrderDetails)it;
-								
+								//List<Component> cs = od.getComponents();
 								Device d = od.getDevice();
+								d.setComponents(d.getComponents());
 								System.out.println("Order received: " + d.toString());
-								int i = 0;
-								
+								int i = 0;								
 								System.out.println("Components size: "+Integer.toString(d.getComponents().size()));
 							
-								for(Component c : (List<Component>)od.getDevice().getComponents())
-								{														
-									System.out.println(c.toString());
-								}
+
 									
 							}
 						}

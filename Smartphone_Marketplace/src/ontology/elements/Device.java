@@ -11,9 +11,9 @@ import jade.content.onto.annotations.Slot;
 
 public class Device extends Item {
 		
-	protected String deviceType;
+	private String deviceType;
 	
-	protected List<Component> components;// = new ArrayList<Component>();
+	private List<Component> components;// = new ArrayList<Component>();
 
 	public Device(){
 		super();

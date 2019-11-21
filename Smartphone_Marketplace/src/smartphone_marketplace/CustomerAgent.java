@@ -169,46 +169,53 @@ public class CustomerAgent extends Agent  {
 			msg.setOntology(ontology.getName()); 
 
 			Device device = new Device();
+			Component[] c = new Component[4];
 			{
 				if(Math.random() < 0.5) {
 					device.setName("Phone");
-					device.setComponent(new Component("Screen","5"));
-					device.setComponent(new Component("Battery","2000"));
+					c[0] = (new Component("Screen","5"));
+					c[1] = (new Component("Battery","2000"));
 					//Screen = 5"
 					//Battery - 2000mAh
 				}
 				else {
 					device.setName("Phablet");
-					device.setComponent(new Component("Screen","7"));
-					device.setComponent(new Component("Battery","3000"));
+					c[0] = (new Component("Screen","7"));
+					c[1] = (new Component("Battery","3000"));
 					//Screen = 7"
 					//Battery - 3000mAh
 				}
 
 				if(Math.random() < 0.5) {
-					device.setComponent(new Component("RAM","4"));
+					c[2] = (new Component("RAM","4"));
 					//RAM = 4Gb
 				}
 				else {
-					device.setComponent(new Component("RAM","8"));
+					c[2] = (new Component("RAM","8"));
 					//RAM = 8Gb
 				}
 
 				if(Math.random() < 0.5) {
-					device.setComponent(new Component("Storage","64"));
+					c[3] = (new Component("Storage","64"));
 					//Storage = 64Gb
 				}
 				else {
-					device.setComponent(new Component("Storage","256"));
+					c[3] = (new Component("Storage","256"));
 					//Storage = 256Gb
 				}
 			}
 			
+			//device.setComponents(c);
+			
 			double quantity = Math.floor(1 + 50 * Math.random());
 			double price = Math.floor(100 + 500 * Math.random());
 			double fee = quantity * Math.floor(1 + 50 * Math.random());
+			
+			
+			
 
-			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee);
+
+			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee, c);
 
 						
 			PlaceOrder order = new PlaceOrder();			
