@@ -96,7 +96,6 @@ public class BuyerSellerTicker extends Agent {
 				}
 				myAgent.send(tick);
 				step++;
-				day++;
 				break;
 			case 1:
 				//wait to receive a "done" message from all agents

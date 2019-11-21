@@ -57,6 +57,8 @@ public class SupplierAgent extends Agent {
 			stock.put(new Component("RAM","8"),(double)35);
 			System.out.println("Supplier 2 stock: " + stock);
 		}
+		else
+			System.out.println("Invalid Supplier");
 
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);

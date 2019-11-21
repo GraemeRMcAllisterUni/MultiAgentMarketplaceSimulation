@@ -80,8 +80,8 @@ public class CustomerAgent extends Agent  {
 				if(msg.getContent().equals("new day")) {
 					//spawn new sequential behaviour for day's activities
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					dailyActivity.addSubBehaviour(new RequestOrder());
 					dailyActivity.addSubBehaviour(new EndDay(myAgent));
+					myAgent.addBehaviour(new RequestOrder());
 					myAgent.addBehaviour(dailyActivity);
 				}
 				else {
@@ -104,6 +104,7 @@ public class CustomerAgent extends Agent  {
 
 		@Override
 		public void action() {
+			System.out.println("Customer Ending Day");
 			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 			msg.addReceiver(tickerAgent);
 			msg.setContent("done");
@@ -222,6 +223,7 @@ public class CustomerAgent extends Agent  {
 				getContentManager().fillContent(msg, requestOrder); //send the wrapper object
 				System.out.println(requestOrder);
 				send(msg);
+				System.out.println("Order sent. Order: " + msg);
 			}
 			catch (CodecException ce) {
 				ce.printStackTrace();

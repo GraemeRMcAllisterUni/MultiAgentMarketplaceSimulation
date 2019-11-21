@@ -1,5 +1,8 @@
 package smartphone_marketplace;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jade.content.Concept;
 import jade.content.ContentElement;
 import jade.content.lang.Codec;
@@ -10,6 +13,7 @@ import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.domain.DFService;
@@ -20,13 +24,11 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import ontology.MarketplaceOntology;
 import ontology.elements.*;
-import smartphone_marketplace.CustomerAgent.EndDay;
-import smartphone_marketplace.CustomerAgent.RequestOrder;
-
 
 public class ManufacturerAgent extends Agent{
 	
 	private AID tickerAgent;
+	private AID customerAID;
 	private Codec codec = new SLCodec();
 	private Ontology ontology = MarketplaceOntology.getInstance();
 
@@ -70,10 +72,13 @@ public class ManufacturerAgent extends Agent{
 				}
 				if(msg.getContent().equals("new day")) {
 					//spawn new sequential behaviour for day's activities
-					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					dailyActivity.addSubBehaviour(new OrderRequest());
-					dailyActivity.addSubBehaviour(new EndDay(myAgent));
-					myAgent.addBehaviour(dailyActivity);
+					CyclicBehaviour or = new OrderRequest();
+					myAgent.addBehaviour(or);
+					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
+					cyclicBehaviours.add(or);
+					myAgent.addBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
+					
+
 				}
 				else {
 					//termination message to end simulation
@@ -87,7 +92,39 @@ public class ManufacturerAgent extends Agent{
 
 	}
 	
+	public class EndDayListener extends CyclicBehaviour {
+		private int buyersFinished = 0;
+		private List<Behaviour> toRemove;
+		
+		public EndDayListener(Agent a, List<Behaviour> toRemove) {
+			super(a);
+			this.toRemove = toRemove;
+		}
 
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.MatchContent("done");
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				buyersFinished++;
+			}
+			else {
+				block();
+			}
+				//we are finished
+				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+				tick.setContent("done");
+				tick.addReceiver(tickerAgent);
+				myAgent.send(tick);
+				//remove behaviours
+				for(Behaviour b : toRemove) {
+					myAgent.removeBehaviour(b);
+				}
+				myAgent.removeBehaviour(this);
+			
+		}
+		
+	}
 
 	private class OrderRequest extends CyclicBehaviour{
 		@Override

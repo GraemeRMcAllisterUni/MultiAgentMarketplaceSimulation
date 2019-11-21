@@ -37,6 +37,10 @@ public class Main {
 					null);
 			snifferDog.start();
 			
+			AgentController tickerAgent = myContainer.createNewAgent("ticker", DayTicker.class.getCanonicalName(),
+					null);
+			tickerAgent.start();
+			
 
 			
 			
