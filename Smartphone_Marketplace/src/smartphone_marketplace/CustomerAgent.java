@@ -16,6 +16,7 @@ import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
+import jade.core.behaviours.SequentialBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import ontology.MarketplaceOntology;
@@ -55,14 +56,66 @@ public class CustomerAgent extends Agent  {
 		catch(FIPAException e){
 			e.printStackTrace();
 		}
-		
-
-
-		manufacturerAID = new AID("Manufacturer",AID.ISLOCALNAME);	
-		addBehaviour(new RequestOrder());
+		manufacturerAID = new AID("Manufacturer",AID.ISLOCALNAME);			
 		addBehaviour(new TickerWaiter(this));
-		//addBehaviour(new SellBehaviour());
 
+	}
+	
+	public class TickerWaiter extends CyclicBehaviour {
+
+		//behaviour to wait for a new day
+		public TickerWaiter(Agent a) {
+			super(a);
+		}
+
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchContent("new day"),
+					MessageTemplate.MatchContent("terminate"));
+			ACLMessage msg = myAgent.receive(mt); 
+			if(msg != null) {
+				if(tickerAgent == null) {
+					tickerAgent = msg.getSender();
+				}
+				if(msg.getContent().equals("new day")) {
+					//spawn new sequential behaviour for day's activities
+					SequentialBehaviour dailyActivity = new SequentialBehaviour();
+					dailyActivity.addSubBehaviour(new RequestOrder());
+					dailyActivity.addSubBehaviour(new EndDay(myAgent));
+					myAgent.addBehaviour(dailyActivity);
+				}
+				else {
+					//termination message to end simulation
+					myAgent.doDelete();
+				}
+			}
+			else{
+				block();
+			}
+		}
+
+	}
+	
+	public class EndDay extends OneShotBehaviour {
+		
+		public EndDay(Agent a) {
+			super(a);
+		}
+
+		@Override
+		public void action() {
+			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+			msg.addReceiver(tickerAgent);
+			msg.setContent("done");
+			myAgent.send(msg);
+			
+			//send a message to manufacturer that we have finished
+			ACLMessage custDone = new ACLMessage(ACLMessage.INFORM);
+			custDone.setContent("done");
+			custDone.addReceiver(manufacturerAID);
+			myAgent.send(custDone);
+		}
+		
 	}
 	
 	/*
@@ -113,15 +166,10 @@ public class CustomerAgent extends Agent  {
 			msg.setLanguage(codec.getName());
 			msg.setOntology(ontology.getName()); 
 
-
-
-
 			Device device = new Device();
-			//double[] components = {Math.random(),Math.random(),Math.random()};
 			{
 				if(Math.random() < 0.5) {
 					device.setName("Phone");
-
 					device.setComponent(new Component("Screen","5"));
 					device.setComponent(new Component("Battery","2000"));
 					//Screen = 5"
@@ -129,7 +177,6 @@ public class CustomerAgent extends Agent  {
 				}
 				else {
 					device.setName("Phablet");
-
 					device.setComponent(new Component("Screen","7"));
 					device.setComponent(new Component("Battery","3000"));
 					//Screen = 7"
@@ -160,13 +207,7 @@ public class CustomerAgent extends Agent  {
 			double fee = quantity * Math.floor(1 + 50 * Math.random());
 
 			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee);
-			
-			/*
-			orderDetails.setDevice(device);
-			orderDetails.setQuantity(quantity);
-			orderDetails.setFee(fee);
-			orderDetails.setPrice(price);
-			*/
+
 						
 			PlaceOrder order = new PlaceOrder();			
 			order.setCustomer(myAgent.getAID());
@@ -191,49 +232,8 @@ public class CustomerAgent extends Agent  {
 
 		}
 
-
-
-
 	}
 
-	public class TickerWaiter extends CyclicBehaviour {
-
-		//behaviour to wait for a new day
-		public TickerWaiter(Agent a) {
-			super(a);
-		}
-
-		@Override
-		public void action() {
-			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchContent("new day"),
-					MessageTemplate.MatchContent("terminate"));
-			ACLMessage msg = myAgent.receive(mt); 
-			if(msg != null) {
-				if(tickerAgent == null) {
-					tickerAgent = msg.getSender();
-				}
-				if(msg.getContent().equals("new day")) {
-					System.out.println("new day");
-					/*myAgent.addBehaviour(new BookGenerator());
-					myAgent.addBehaviour(new FindBuyers(myAgent));
-					CyclicBehaviour os = new OffersServer(myAgent);
-					myAgent.addBehaviour(os);
-					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
-					cyclicBehaviours.add(os);
-					myAgent.addBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
-					*/
-				}
-				else {
-					//termination message to end simulation
-					myAgent.doDelete();
-				}
-			}
-			else{
-				block();
-			}
-		}
-
-	}
 }
 
 

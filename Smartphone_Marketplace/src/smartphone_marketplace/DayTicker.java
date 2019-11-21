@@ -4,6 +4,8 @@
 package smartphone_marketplace;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import jade.core.AID;
 import jade.core.Agent;
@@ -67,27 +69,25 @@ public class DayTicker extends Agent {
 			switch(step) {
 			case 0:
 				//find all agents using directory service
-				DFAgentDescription template1 = new DFAgentDescription();
-				ServiceDescription sd = new ServiceDescription();
-				sd.setType("buyer");
-				template1.addServices(sd);
-				DFAgentDescription template2 = new DFAgentDescription();
-				ServiceDescription sd2 = new ServiceDescription();
-				sd2.setType("seller");
-				template2.addServices(sd2);
-				try{
-					DFAgentDescription[] agentsType1  = DFService.search(myAgent,template1); 
-					for(int i=0; i<agentsType1.length; i++){
-						marketplaceAgents.add(agentsType1[i].getName()); // this is the AID
+				List<String> agents =  Arrays.asList("customer", "manufacturer", "supplier", "postman");
+				for(String a : agents)
+				{
+					DFAgentDescription agentDesc = new DFAgentDescription();
+					ServiceDescription serviceDesc = new ServiceDescription();
+					serviceDesc.setType(a);
+					agentDesc.addServices(serviceDesc);
+					try{
+						DFAgentDescription[] agentsFound  = DFService.search(myAgent,agentDesc); 
+						
+						for(DFAgentDescription aF : agentsFound)
+							marketplaceAgents.add(aF.getName()); // this is the AID						
+
 					}
-					DFAgentDescription[] agentsType2  = DFService.search(myAgent,template2); 
-					for(int i=0; i<agentsType2.length; i++){
-						marketplaceAgents.add(agentsType2[i].getName()); // this is the AID
+					catch(FIPAException e) {
+						e.printStackTrace();
 					}
 				}
-				catch(FIPAException e) {
-					e.printStackTrace();
-				}
+
 				//send new day message to each agent
 				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
 				tick.setContent("new day");

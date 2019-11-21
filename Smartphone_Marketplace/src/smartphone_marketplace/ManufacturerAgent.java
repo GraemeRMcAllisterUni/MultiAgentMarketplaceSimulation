@@ -8,8 +8,10 @@ import jade.content.lang.sl.SLCodec;
 import jade.content.onto.Ontology;
 import jade.content.onto.OntologyException;
 import jade.content.onto.basic.Action;
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.SequentialBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -18,10 +20,13 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import ontology.MarketplaceOntology;
 import ontology.elements.*;
+import smartphone_marketplace.CustomerAgent.EndDay;
+import smartphone_marketplace.CustomerAgent.RequestOrder;
 
 
 public class ManufacturerAgent extends Agent{
-
+	
+	private AID tickerAgent;
 	private Codec codec = new SLCodec();
 	private Ontology ontology = MarketplaceOntology.getInstance();
 
@@ -47,17 +52,42 @@ public class ManufacturerAgent extends Agent{
 		
 		addBehaviour(new OrderRequest());
 	}
+	public class TickerWaiter extends CyclicBehaviour {
 
-	private class QueryBehaviour extends CyclicBehaviour{
+		//behaviour to wait for a new day
+		public TickerWaiter(Agent a) {
+			super(a);
+		}
 
 		@Override
 		public void action() {
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.QUERY_IF); 
-			ACLMessage msg = receive(mt);			
+			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchContent("new day"),
+					MessageTemplate.MatchContent("terminate"));
+			ACLMessage msg = myAgent.receive(mt); 
+			if(msg != null) {
+				if(tickerAgent == null) {
+					tickerAgent = msg.getSender();
+				}
+				if(msg.getContent().equals("new day")) {
+					//spawn new sequential behaviour for day's activities
+					SequentialBehaviour dailyActivity = new SequentialBehaviour();
+					dailyActivity.addSubBehaviour(new OrderRequest());
+					dailyActivity.addSubBehaviour(new EndDay(myAgent));
+					myAgent.addBehaviour(dailyActivity);
+				}
+				else {
+					//termination message to end simulation
+					myAgent.doDelete();
+				}
+			}
+			else{
+				block();
+			}
 		}
 
-
 	}
+	
+
 
 	private class OrderRequest extends CyclicBehaviour{
 		@Override
