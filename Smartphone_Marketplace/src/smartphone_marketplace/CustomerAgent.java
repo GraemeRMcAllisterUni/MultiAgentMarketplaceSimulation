@@ -78,12 +78,11 @@ public class CustomerAgent extends Agent  {
 					tickerAgent = msg.getSender();
 				}
 				if(msg.getContent().equals("new day")) {
-					System.out.println("New Day received from Ticker");
 					//spawn new sequential behaviour for day's activities
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					dailyActivity.addSubBehaviour(new EndDay(myAgent));
 					myAgent.addBehaviour(new RequestOrder());
-					myAgent.addBehaviour(dailyActivity);
+					myAgent.addBehaviour(dailyActivity);					
+					dailyActivity.addSubBehaviour(new EndDay(myAgent));
 				}
 				else {
 					//termination message to end simulation
@@ -105,7 +104,7 @@ public class CustomerAgent extends Agent  {
 
 		@Override
 		public void action() {
-			System.out.println("Customer Ending Day");
+			doWait(1000);
 			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 			msg.addReceiver(tickerAgent);
 			msg.setContent("done");
@@ -169,38 +168,38 @@ public class CustomerAgent extends Agent  {
 			msg.setOntology(ontology.getName()); 
 
 			Device device = new Device();
-			Component[] c = new Component[4];
+			List<Component> c = new ArrayList<Component>();
 			{
 				if(Math.random() < 0.5) {
 					device.setName("Phone");
-					c[0] = (new Component("Screen","5"));
-					c[1] = (new Component("Battery","2000"));
+					c.add(new Component("Screen","5"));
+					c.add(new Component("Battery","2000"));
 					//Screen = 5"
 					//Battery - 2000mAh
 				}
 				else {
 					device.setName("Phablet");
-					c[0] = (new Component("Screen","7"));
-					c[1] = (new Component("Battery","3000"));
+					c.add(new Component("Screen","7"));
+					c.add(new Component("Battery","3000"));
 					//Screen = 7"
 					//Battery - 3000mAh
 				}
 
 				if(Math.random() < 0.5) {
-					c[2] = (new Component("RAM","4"));
+					c.add(new Component("RAM","4"));
 					//RAM = 4Gb
 				}
 				else {
-					c[2] = (new Component("RAM","8"));
+					c.add(new Component("RAM","8"));
 					//RAM = 8Gb
 				}
 
 				if(Math.random() < 0.5) {
-					c[3] = (new Component("Storage","64"));
+					c.add(new Component("Storage","64"));
 					//Storage = 64Gb
 				}
 				else {
-					c[3] = (new Component("Storage","256"));
+					c.add(new Component("Storage","256"));
 					//Storage = 256Gb
 				}
 			}
@@ -209,13 +208,12 @@ public class CustomerAgent extends Agent  {
 			
 			double quantity = Math.floor(1 + 50 * Math.random());
 			double price = Math.floor(100 + 500 * Math.random());
+			double dueDate = Math.floor(1 + 10 * Math.random());
 			double fee = quantity * Math.floor(1 + 50 * Math.random());
 			
-			
-			
 
 
-			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee, c);
+			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee, dueDate, c);
 
 						
 			PlaceOrder order = new PlaceOrder();			
@@ -229,9 +227,9 @@ public class CustomerAgent extends Agent  {
 			try {
 				// Let JADE convert from Java objects to string
 				getContentManager().fillContent(msg, requestOrder); //send the wrapper object
-				System.out.println(requestOrder);
 				send(msg);
-				System.out.println("Order sent. Order: " + msg);
+				System.out.println("order sent");
+				doWait(1000);
 			}
 			catch (CodecException ce) {
 				ce.printStackTrace();

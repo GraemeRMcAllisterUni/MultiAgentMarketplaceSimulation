@@ -11,10 +11,12 @@ public class OrderDetails extends Item{
 	
 	private double Price;
 	private double Fee;
-	private double Quantity;	
+	private double Quantity;
+	private double DueDate;
 	private boolean Fulfilled;
 	private	Device device;
-	private Component[] components = new Component[4];
+	public double totalPrice;
+	private List<Component> components;
 	
 	
 	public void setPrice(double price) {
@@ -22,12 +24,12 @@ public class OrderDetails extends Item{
 		this.Price = price;		
 	}
 	
-	public Component[] getComponents() {
+	public List<Component> getComponents() {
 		
 		return components;	
 	}
 	
-	public void setComponents(Component[] c)
+	public void setComponents(List<Component> c)
 	{
 //		int i=0;
 //		for(Component comp : components) {i++;}
@@ -69,16 +71,31 @@ public class OrderDetails extends Item{
 	}
 	
 
-	public OrderDetails(Device d, double quantity, double price, double fee, Component[] c) {
+	public OrderDetails(Device d, double quantity, double price, double fee, double dueDate, List<Component> c) {
 		Price = price;
 		Fee = fee;
 		device = d;
 		Quantity = quantity;
+		DueDate = dueDate;
 		components = c;
 	}
 	
 	public OrderDetails() {
 		super();	
+	}
+
+	/**
+	 * @return the dueDate
+	 */
+	public double getDueDate() {
+		return DueDate;
+	}
+
+	/**
+	 * @param dueDate the dueDate to set
+	 */
+	public void setDueDate(double dueDate) {
+		DueDate = dueDate;
 	}
 	
 

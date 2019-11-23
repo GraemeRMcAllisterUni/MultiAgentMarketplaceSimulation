@@ -10,8 +10,9 @@ public class Component extends Item {
 	}
 	
 	public Component(String type, String spec) {
-		setType(type);
-		setSpec(spec);		
+		//super();
+		this.type = type;
+		this.spec = spec;
 	}
 	
 
@@ -23,16 +24,31 @@ public class Component extends Item {
 		this.type = type;
 	}
 	
-	public String getSpec() {
-		return spec;
-	}
-	
 	public void setSpec(String spec) {
 		this.spec = spec;
+	}
+	
+	
+	public String getSpec() {
+		return spec;
 	}
 	
 	public String toString() {				
 		return getType() + " " + getSpec();		
 	}
+	
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Component)) {
+            return false;
+        }
+        Component c = (Component)o;
+        return type.equals(c.type)
+                && spec.equals(c.spec);
+
+    }
 		
 }

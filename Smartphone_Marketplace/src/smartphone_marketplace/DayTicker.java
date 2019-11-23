@@ -69,8 +69,9 @@ public class DayTicker extends Agent {
 			switch(step) {
 			case 0:
 				System.out.println("Setting up day " + day);
+				doWait(6000);
 				//find all agents using directory service
-				List<String> agents =  Arrays.asList("customer", "manufacturer", "supplier"/*, "postman"*/);
+				List<String> agents =  Arrays.asList("customer", "supplier", "manufacturer"/*, "postman"*/);
 				for(String a : agents)
 				{
 					System.out.println(a);
@@ -83,7 +84,6 @@ public class DayTicker extends Agent {
 						
 						for(DFAgentDescription aF : agentsFound) {
 							marketplaceAgents.add(aF.getName()); // this is the AID						
-							System.out.println(aF.getName());
 						}
 					}
 					catch(FIPAException e) {
