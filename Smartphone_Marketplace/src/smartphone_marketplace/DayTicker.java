@@ -35,7 +35,7 @@ public class DayTicker extends Agent {
 			e.printStackTrace();
 		}
 		//wait for the other agents to start
-		doWait(1000);
+		doWait(5000);
 		addBehaviour(new SynchAgentsBehaviour(this));
 	}
 
@@ -69,9 +69,9 @@ public class DayTicker extends Agent {
 			switch(step) {
 			case 0:
 				System.out.println("Setting up day " + day);
-				doWait(6000);
+				doWait(9000);
 				//find all agents using directory service
-				List<String> agents =  Arrays.asList("customer", "supplier", "manufacturer"/*, "postman"*/);
+				List<String> agents =  Arrays.asList("postman");
 				for(String a : agents)
 				{
 					System.out.println(a);

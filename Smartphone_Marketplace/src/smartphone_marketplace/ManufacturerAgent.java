@@ -35,6 +35,7 @@ public class ManufacturerAgent extends Agent{
 	private List<AID> customerAgents = new ArrayList<>();
 	private Codec codec = new SLCodec();
 	private Ontology ontology = MarketplaceOntology.getInstance();
+	int noOfCustomers = 3;
 
 	HashMap<String, Double> stock1 = new HashMap<String, Double>();
 	HashMap<String, Double> stock2 = new HashMap<String, Double>();
@@ -57,8 +58,6 @@ public class ManufacturerAgent extends Agent{
 			e.printStackTrace();
 
 		}
-
-
 
 		stock1.put("5",(double)100);
 		stock1.put("7",(double)150);		
@@ -161,13 +160,14 @@ public class ManufacturerAgent extends Agent{
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg != null)
 			{
+
 				customersDone++;
 			}
 			else
 			{
 				block();
 			}
-			if(customersDone == customerAgents.size())
+			if(customersDone >= noOfCustomers)
 			{
 				ACLMessage msgSupplier = new ACLMessage(ACLMessage.INFORM);
 
@@ -185,6 +185,7 @@ public class ManufacturerAgent extends Agent{
 					myAgent.removeBehaviour(b);
 				}
 				myAgent.removeBehaviour(this);
+				System.out.println("manufactorer done");
 			}
 
 		}
@@ -237,7 +238,7 @@ public class ManufacturerAgent extends Agent{
 		}
 
 		@Override
-		public void action() {
+		public void action() {			
 			
 			//This behaviour should only respond to REQUEST messages
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST); 
@@ -258,14 +259,13 @@ public class ManufacturerAgent extends Agent{
 								if(strategy(od))
 								{
 									orderMsg.setContent("accept");
-
 								}
 								else
 								{
 									orderMsg.setContent("reject");
 								}
 								orderMsg.addReceiver(msg.getSender());
-								myAgent.send(msg);									
+								//myAgent.send(msg);							
 						}
 						}
 					}
@@ -279,5 +279,17 @@ public class ManufacturerAgent extends Agent{
 
 			}
 		}
+	}
+	
+	@Override
+	protected void takeDown() {
+		//Deregister from the yellow pages
+		try{
+			DFService.deregister(this);
+		}
+		catch(FIPAException e){
+			e.printStackTrace();
+		}
+
 	}
 }
