@@ -18,6 +18,10 @@ public class OrderDetails extends Item{
 	public double totalPrice;
 	private List<Component> components;
 	
+	public OrderDetails() {
+		super();	
+	}
+	
 	
 	public void setPrice(double price) {
 		
@@ -80,10 +84,6 @@ public class OrderDetails extends Item{
 		components = c;
 	}
 	
-	public OrderDetails() {
-		super();	
-	}
-
 	/**
 	 * @return the dueDate
 	 */
@@ -97,6 +97,17 @@ public class OrderDetails extends Item{
 	public void setDueDate(double dueDate) {
 		DueDate = dueDate;
 	}
+
+
+	@Override
+	public String toString() {
+		return "OrderDetails [getComponents()=" + getComponents() + ", getPrice()=" + getPrice() + ", getFee()="
+				+ getFee() + ", getQuantity()=" + getQuantity() + ", getDevice()=" + getDevice() + ", getDueDate()="
+				+ getDueDate() + "]";
+	}
+	
+
+
 	
 
 }

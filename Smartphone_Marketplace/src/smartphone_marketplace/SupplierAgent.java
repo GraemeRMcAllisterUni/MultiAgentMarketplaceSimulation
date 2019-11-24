@@ -48,9 +48,6 @@ public class SupplierAgent extends Agent {
 		
 		
 
-		System.out.println(this.getName());
-		
-
 		if(this.getName().contains("Supplier 1"))
 		{
 			stock.put(new Component("Screen","5"),(double)100);
@@ -61,7 +58,7 @@ public class SupplierAgent extends Agent {
 			stock.put(new Component("RAM","8"),(double)60);
 			stock.put(new Component("Battery","2000"),(double)70);
 			stock.put(new Component("Battery","3000"),(double)100);
-			System.out.println("Supplier 1 stock: " + stock);
+			//System.out.println("Supplier 1 stock: " + stock);
 		}
 		else if (this.getName().contains("Supplier 2")) 
 		{
@@ -70,7 +67,7 @@ public class SupplierAgent extends Agent {
 			stock.put(new Component("Storage","256"),(double)40);		
 			stock.put(new Component("RAM","4"),(double)20);
 			stock.put(new Component("RAM","8"),(double)35);
-			System.out.println("Supplier 2 stock: " + stock);
+			//System.out.println("Supplier 2 stock: " + stock);
 		}
 		else
 			System.out.println("Invalid Supplier");
@@ -99,7 +96,6 @@ public class SupplierAgent extends Agent {
 					tickerAgent = msg.getSender();
 				}
 				if(msg.getContent().equals("new day")) {
-					System.out.println("new day as supplier" + myAgent.getName());
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
 					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
 					 

@@ -69,12 +69,11 @@ public class DayTicker extends Agent {
 			switch(step) {
 			case 0:
 				System.out.println("Setting up day " + day);
-				doWait(9000);
+				//doWait(9000);
 				//find all agents using directory service
-				List<String> agents =  Arrays.asList("postman");
+				List<String> agents =  Arrays.asList("customer", "manufacturer", "supplier", "postman");
 				for(String a : agents)
 				{
-					System.out.println(a);
 					DFAgentDescription agentDesc = new DFAgentDescription();
 					ServiceDescription serviceDesc = new ServiceDescription();
 					serviceDesc.setType(a);

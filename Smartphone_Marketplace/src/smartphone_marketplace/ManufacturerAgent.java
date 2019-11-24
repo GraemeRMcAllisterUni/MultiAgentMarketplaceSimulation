@@ -36,6 +36,7 @@ public class ManufacturerAgent extends Agent{
 	private Codec codec = new SLCodec();
 	private Ontology ontology = MarketplaceOntology.getInstance();
 	int noOfCustomers = 3;
+	int w = 5;
 
 	HashMap<String, Double> stock1 = new HashMap<String, Double>();
 	HashMap<String, Double> stock2 = new HashMap<String, Double>();
@@ -94,13 +95,17 @@ public class ManufacturerAgent extends Agent{
 				}
 				if(msg.getContent().equals("new day")) {
 					//spawn new sequential behaviour for day's activities
-					CyclicBehaviour or = new OrderRequest();
-					myAgent.addBehaviour(or);
+					
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
+					
+					SequentialBehaviour dailyActivity = new SequentialBehaviour();
+					OrderRequest or = new OrderRequest();
+					
+					dailyActivity.addSubBehaviour(new FindSuppliers());
+					dailyActivity.addSubBehaviour(or);
 					cyclicBehaviours.add(or);
-					CyclicBehaviour fa = new FindAgents();
-					cyclicBehaviours.add(fa);
-					myAgent.addBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
+					dailyActivity.addSubBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
+					myAgent.addBehaviour(dailyActivity);
 
 
 				}
@@ -116,12 +121,12 @@ public class ManufacturerAgent extends Agent{
 
 	}
 
-	public class FindAgents extends CyclicBehaviour {
+	public class FindSuppliers extends OneShotBehaviour {
 
 
 		public 	void action() {
-
-			String [] agents = { "customer" , "supplier"};
+			System.out.println("Finding Customers");
+			String [] agents = { "supplier"};
 
 			for(String a : agents)
 			{
@@ -144,7 +149,7 @@ public class ManufacturerAgent extends Agent{
 		}
 	}
 
-	public class EndDayListener extends CyclicBehaviour {
+	public class EndDayListener extends Behaviour {
 		private int customersDone = 0;
 		private List<Behaviour> toRemove;
 
@@ -155,12 +160,10 @@ public class ManufacturerAgent extends Agent{
 
 		@Override
 		public void action() {
-
 			MessageTemplate mt = MessageTemplate.MatchContent("done");
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg != null)
 			{
-
 				customersDone++;
 			}
 			else
@@ -181,21 +184,40 @@ public class ManufacturerAgent extends Agent{
 				tick.addReceiver(tickerAgent);
 				myAgent.send(tick);
 				//remove behaviours
+				toRemove.add(this);
 				for(Behaviour b : toRemove) {
 					myAgent.removeBehaviour(b);
 				}
-				myAgent.removeBehaviour(this);
-				System.out.println("manufactorer done");
+				//myAgent.removeBehaviour(this);
+				System.out.println("manufacturer done");
 			}
 
 		}
+
+		@Override
+		public boolean done() {
+			return customersDone >= noOfCustomers;
+		}
+	}
+	
+	private class ReceiveSupplies extends CyclicBehaviour{
+
+		@Override
+		public void action() {
+			// TODO Auto-generated method stub
+			
+		}
+
 	}
 
-	private class OrderRequest extends CyclicBehaviour{
+	private class OrderRequest extends Behaviour{
 
-		double acceptableProfitMargin = 1;
+		double acceptableProfitMargin = 1000;
+		
+		int ordersReceived = 0;
 
 		Boolean strategy(OrderDetails od) {
+
 
 			List<Component> components = od.getComponents();
 			Boolean accepted = true;															
@@ -214,25 +236,44 @@ public class ManufacturerAgent extends Agent{
 				if(preferLower && stock2.get(c.getSpec()) != null)
 					cP = stock2.get(c.getSpec());
 
-				System.out.println(c.toString() +" Price: " + cP);
+
 
 				componentsPrice += cP;
 			}
+			
+
 
 			od.totalPrice = price * quantity - componentsPrice;
+			
 
 			double dd = dueDate;
-			if(dd>4)
+			if(dd>4) {
 				dd = 0;
+			}
+			else if(dd<4)
+			{
+				dd = 4 - dd;
+			}
 
+			
 			expectedProfit = od.totalPrice - (dd * fee);
+			
+
+//			expectedProfit =- w * od.getComponents().size() * 4;
+//			System.out.println("new Expected Profit = w * od.getComponents().size() * 4 =" + expectedProfit);
+			
+			
+			
 
 			if(expectedProfit<acceptableProfitMargin || (dueDate<4&&(4-dueDate*fee)>od.totalPrice))
 				accepted = false;
-
+			
 			System.out.println(od.toString());
-			System.out.println(accepted);
+			System.out.println(od.totalPrice + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
+			System.out.println("expected = totalPrice:"+ od.totalPrice +" - " + "dd:" +dd + " * fee:" + fee);
 			System.out.println("Expected Profit = " + expectedProfit);
+
+			System.out.println(accepted);
 			
 			return accepted;
 		}
@@ -265,7 +306,9 @@ public class ManufacturerAgent extends Agent{
 									orderMsg.setContent("reject");
 								}
 								orderMsg.addReceiver(msg.getSender());
-								//myAgent.send(msg);							
+								System.out.println(msg.getSender());
+								myAgent.send(orderMsg);
+								ordersReceived++;
 						}
 						}
 					}
@@ -279,7 +322,30 @@ public class ManufacturerAgent extends Agent{
 
 			}
 		}
+		
+		public void reset() {
+			ordersReceived = 0;
+			super.reset();
+		}
+
+		@Override
+		public boolean done() {
+			if(ordersReceived == 3)
+				return true;
+			else	
+				return false;
+		}
+		
+		
+		public int onEnd(){		
+			reset();
+			return 0;
+			
+		}
 	}
+
+	
+	
 	
 	@Override
 	protected void takeDown() {

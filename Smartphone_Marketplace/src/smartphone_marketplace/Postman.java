@@ -134,7 +134,7 @@ public class Postman extends Agent  {
 				try {
 					// Let JADE convert from Java objects to string
 					getContentManager().fillContent(msg, requestOrder); //send the wrapper object
-					send(msg);
+					//send(msg);
 
 				}
 				catch (CodecException ce) {
@@ -145,14 +145,14 @@ public class Postman extends Agent  {
 				} 
 
 			});
-
-
+			
+			compSent.clear();
 		}
 	}
 
 
 
-private class PostalOrder extends OneShotBehaviour{
+private class PostalOrder extends CyclicBehaviour{
 
 
 	public PostalOrder(Agent a) {
@@ -176,7 +176,6 @@ private class PostalOrder extends OneShotBehaviour{
 						Item it = order.getItem();
 						if(it instanceof Component){
 							Component c = (Component)it;
-
 							if(msg.getSender().getName().contains("1"))
 							{
 								transit.put(c, (double)1);
@@ -184,13 +183,7 @@ private class PostalOrder extends OneShotBehaviour{
 							else
 							{
 								transit.put(c, (double)4);
-							}
-
-
-							System.out.println("order read");
-							ACLMessage orderMsg = new ACLMessage(ACLMessage.INFORM);
-							orderMsg.addReceiver(msg.getSender());
-							myAgent.send(orderMsg);							
+							}						
 						}
 					}
 				}
@@ -224,12 +217,12 @@ public class TickerWaiter extends CyclicBehaviour {
 				tickerAgent = msg.getSender();
 			}
 			if(msg.getContent().equals("new day")) {
-				//spawn new sequential behaviour for day's activities
 				SequentialBehaviour dailyActivity = new SequentialBehaviour();
-				//sub-behaviours will execute in the order they are added
-				dailyActivity.addSubBehaviour(new PostalOrder(myAgent));
-				dailyActivity.addSubBehaviour(new deliver(myAgent));
-				myAgent.addBehaviour(dailyActivity);
+				ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();					
+				CyclicBehaviour po = new PostalOrder(myAgent);				
+				cyclicBehaviours.add(po);				
+				dailyActivity.addSubBehaviour(po);				
+				myAgent.addBehaviour(dailyActivity);				
 				myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
 			}
 			else {
@@ -273,7 +266,7 @@ public class EndDayListener extends CyclicBehaviour {
 			myAgent.removeBehaviour(b);
 		}
 		myAgent.removeBehaviour(this);
-		System.out.println("manufactorer done");
+		System.out.println("manufacturer done");
 
 	}
 }

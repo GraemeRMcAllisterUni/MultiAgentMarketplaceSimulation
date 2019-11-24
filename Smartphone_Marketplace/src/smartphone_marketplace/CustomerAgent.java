@@ -21,6 +21,7 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import ontology.MarketplaceOntology;
 import ontology.elements.*;
+import smartphone_marketplace.ManufacturerAgent.EndDayListener;
 
 import java.util.List;
 import jade.domain.DFService;
@@ -38,64 +39,47 @@ public class CustomerAgent extends Agent  {
 	//stock list, with serial number as the key
 
 	protected void setup(){
-
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);
-
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		ServiceDescription sd = new ServiceDescription();
-
 		sd.setType("customer");
 		sd.setName(getLocalName() + "-customer-agent");
-
 		dfd.addServices(sd);
-		try{
-			DFService.register(this, dfd);
-		}
-		catch(FIPAException e){
-			e.printStackTrace();
-		}
+		try{DFService.register(this, dfd);}
+		catch(FIPAException e){e.printStackTrace();}
 		manufacturerAID = new AID("Manufacturer",AID.ISLOCALNAME);	
-
 		addBehaviour(new TickerWaiter(this));
 	}
-	
-	public class OrderResponse extends CyclicBehaviour {
+
+	public class OrderResponse extends OneShotBehaviour {
 
 		@Override
 		public void action() {
 			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchContent("accept"),
-					MessageTemplate.MatchContent("r"));			
+					MessageTemplate.MatchContent("reject"));			
 			ACLMessage msg = myAgent.receive(mt); 
 			if(msg != null) {
 				if(tickerAgent == null) {
 					tickerAgent = msg.getSender();
 				}
-				if(msg.getContent().equals("new day")) {
-					//spawn new sequential behaviour for day's activities
-					//					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					//					OneShoeBehaviour osb = new OneShoeBehaviour();
-					//					osb.addBehaviour(new RequestOrder());
-					//					dailyActivity.addSubBehaviour(new EndDay(myAgent));
-					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					dailyActivity.addSubBehaviour(new RequestOrder());
-					dailyActivity.addSubBehaviour(new EndDay(myAgent));
-					myAgent.addBehaviour(dailyActivity);
-					myAgent.removeBehaviour(this);
+				if(msg.getContent().equals("accept")) {
+					System.out.println(myAgent.getLocalName() + ": offer accepted");
+
 
 				}
-				else {
+				else if (msg.getContent().equals("reject")){
 					//termination message to end simulation
-					myAgent.doDelete();
+					System.out.println(myAgent.getLocalName() + ": offcer rejected");
 				}
 			}
 			else{
 				block();
 			}
-			
+
 		}
-	
+
 	}
 
 	public class TickerWaiter extends CyclicBehaviour {
@@ -115,16 +99,13 @@ public class CustomerAgent extends Agent  {
 					tickerAgent = msg.getSender();
 				}
 				if(msg.getContent().equals("new day")) {
-					//spawn new sequential behaviour for day's activities
-					//					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					//					OneShoeBehaviour osb = new OneShoeBehaviour();
-					//					osb.addBehaviour(new RequestOrder());
-					//					dailyActivity.addSubBehaviour(new EndDay(myAgent));
+					System.out.println("Customer heard new day");
+					doWait(1000);
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
 					dailyActivity.addSubBehaviour(new RequestOrder());
+					dailyActivity.addSubBehaviour(new OrderResponse());
 					dailyActivity.addSubBehaviour(new EndDay(myAgent));
 					myAgent.addBehaviour(dailyActivity);
-					myAgent.removeBehaviour(this);
 
 				}
 				else {
@@ -148,10 +129,10 @@ public class CustomerAgent extends Agent  {
 		@Override
 		public void action() {
 			//doWait(1000);
-//			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-//			msg.addReceiver(tickerAgent);
-//			msg.setContent("done");
-//			myAgent.send(msg);
+			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+			msg.addReceiver(tickerAgent);
+			msg.setContent("done");
+			myAgent.send(msg);
 
 			//send a message to manufacturer that we have finished
 			ACLMessage custDone = new ACLMessage(ACLMessage.INFORM);
@@ -162,42 +143,6 @@ public class CustomerAgent extends Agent  {
 
 	}
 
-	/*
-	public class EndDayListener extends CyclicBehaviour {
-		private int buyersFinished = 0;
-		private List<Behaviour> toRemove;
-
-		public EndDayListener(Agent a, List<Behaviour> toRemove) {
-			super(a);
-			this.toRemove = toRemove;
-		}
-
-		@Override
-		public void action() {
-			MessageTemplate mt = MessageTemplate.MatchContent("done");
-			ACLMessage msg = myAgent.receive(mt);
-			if(msg != null) {
-				buyersFinished++;
-			}
-			else {
-				block();
-			}
-			if(buyersFinished == buyers.size()) {
-				//we are finished
-				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-				tick.setContent("done");
-				tick.addReceiver(tickerAgent);
-				myAgent.send(tick);
-				//remove behaviours
-				for(Behaviour b : toRemove) {
-					myAgent.removeBehaviour(b);
-				}
-				myAgent.removeBehaviour(this);
-			}
-		}
-
-	}
-	 */
 
 
 	private class RequestOrder extends OneShotBehaviour{
@@ -206,101 +151,96 @@ public class CustomerAgent extends Agent  {
 		public void action() {
 			boolean sent = false;
 			// Prepare the action request message
-			while(!sent)
+			ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+			msg.addReceiver(manufacturerAID); // sellerAID is the AID of the Seller agent
+			msg.setLanguage(codec.getName());
+			msg.setOntology(ontology.getName()); 
+
+			Device device = new Device();
+			List<Component> c = new ArrayList<Component>();
 			{
-				ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-				msg.addReceiver(manufacturerAID); // sellerAID is the AID of the Seller agent
-				msg.setLanguage(codec.getName());
-				msg.setOntology(ontology.getName()); 
-
-				Device device = new Device();
-				List<Component> c = new ArrayList<Component>();
-				{
-					if(Math.random() < 0.5) {
-						device.setName("Phone");
-						c.add(new Component("Screen","5"));
-						c.add(new Component("Battery","2000"));
-						//Screen = 5"
-						//Battery - 2000mAh
-					}
-					else {
-						device.setName("Phablet");
-						c.add(new Component("Screen","7"));
-						c.add(new Component("Battery","3000"));
-						//Screen = 7"
-						//Battery - 3000mAh
-					}
-
-					if(Math.random() < 0.5) {
-						c.add(new Component("RAM","4"));
-						//RAM = 4Gb
-					}
-					else {
-						c.add(new Component("RAM","8"));
-						//RAM = 8Gb
-					}
-
-					if(Math.random() < 0.5) {
-						c.add(new Component("Storage","64"));
-						//Storage = 64Gb
-					}
-					else {
-						c.add(new Component("Storage","256"));
-						//Storage = 256Gb
-					}
+				if(Math.random() < 0.5) {
+					device.setName("Phone");
+					c.add(new Component("Screen","5"));
+					c.add(new Component("Battery","2000"));
+					//Screen = 5"
+					//Battery - 2000mAh
+				}
+				else {
+					device.setName("Phablet");
+					c.add(new Component("Screen","7"));
+					c.add(new Component("Battery","3000"));
+					//Screen = 7"
+					//Battery - 3000mAh
 				}
 
-				//device.setComponents(c);
-
-				double quantity = Math.floor(1 + 50 * Math.random());
-				double price = Math.floor(100 + 500 * Math.random());
-				double dueDate = Math.floor(1 + 10 * Math.random());
-				double fee = quantity * Math.floor(1 + 50 * Math.random());
-
-
-
-				OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee, dueDate, c);
-
-
-				PlaceOrder order = new PlaceOrder();			
-				order.setCustomer(myAgent.getAID());
-				order.setItem(orderDetails);
-
-				Action requestOrder = new Action();
-				requestOrder.setAction(order);
-				requestOrder.setActor(manufacturerAID);
-
-				try {
-					// Let JADE convert from Java objects to string
-					getContentManager().fillContent(msg, requestOrder); //send the wrapper object
-					send(msg);
-					System.out.println("order sent");
-
-					sent = done();
+				if(Math.random() < 0.5) {
+					c.add(new Component("RAM","4"));
+					//RAM = 4Gb
 				}
-				catch (CodecException ce) {
-					ce.printStackTrace();
+				else {
+					c.add(new Component("RAM","8"));
+					//RAM = 8Gb
 				}
-				catch (OntologyException oe) {
-					oe.printStackTrace();
-				} 
+
+				if(Math.random() < 0.5) {
+					c.add(new Component("Storage","64"));
+					//Storage = 64Gb
+				}
+				else {
+					c.add(new Component("Storage","256"));
+					//Storage = 256Gb
+				}
 			}
 
+			//device.setComponents(c);
+
+			double quantity = Math.floor(1 + 50 * Math.random());
+			double price = Math.floor(100 + 500 * Math.random());
+			double dueDate = Math.floor(1 + 10 * Math.random());
+			double fee = quantity * Math.floor(1 + 50 * Math.random());
+
+
+
+			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee, dueDate, c);
+
+
+			PlaceOrder order = new PlaceOrder();			
+			order.setCustomer(myAgent.getAID());
+			order.setItem(orderDetails);
+
+			Action requestOrder = new Action();
+			requestOrder.setAction(order);
+			requestOrder.setActor(manufacturerAID);
+
+			try {
+				// Let JADE convert from Java objects to string
+				getContentManager().fillContent(msg, requestOrder); //send the wrapper object
+				send(msg);
+				System.out.println("order sent");
+			}
+			catch (CodecException ce) {
+				ce.printStackTrace();
+			}
+			catch (OntologyException oe) {
+				oe.printStackTrace();
+			} 
 		}
 
 	}
-	
-	@Override
-	protected void takeDown() {
-		//Deregister from the yellow pages
-		try{
-			DFService.deregister(this);
-		}
-		catch(FIPAException e){
-			e.printStackTrace();
-		}
 
+
+@Override
+protected void takeDown() {
+	//Deregister from the yellow pages
+	try{
+		DFService.deregister(this);
 	}
+	catch(FIPAException e){
+		e.printStackTrace();
+	}
+
+}
 
 }
 
