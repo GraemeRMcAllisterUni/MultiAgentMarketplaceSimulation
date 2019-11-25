@@ -1,22 +1,30 @@
 package ontology.elements;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import jade.content.Concept;
-import jade.content.onto.annotations.AggregateSlot;
 import ontology.elements.Item;
 
 public class OrderDetails extends Item{
 	
 	private double Price;
 	private double Fee;
-	private double Quantity;
 	private double DueDate;
 	private boolean Fulfilled;
 	private	Device device;
-	public double totalPrice;
+	private double OrderPrice;
+	
 	private List<Component> components;
+
+	public double getOrderPrice() {
+		return OrderPrice;
+	}
+
+
+	public void setOrderPrice(double orderPrice) {
+		OrderPrice = orderPrice;
+	}
+
+	
 	
 	public OrderDetails() {
 		super();	
@@ -35,8 +43,6 @@ public class OrderDetails extends Item{
 	
 	public void setComponents(List<Component> c)
 	{
-//		int i=0;
-//		for(Component comp : components) {i++;}
 		this.components = c;
 	}
 	
@@ -47,9 +53,6 @@ public class OrderDetails extends Item{
 		return Price;
 	}
 	
-	public void setQuantity(double quantity) {
-		this.Quantity = quantity;		
-	}
 	
 	public double getFee() {
 		return Fee;
@@ -60,9 +63,6 @@ public class OrderDetails extends Item{
 			
 	}
 	
-	public double getQuantity() {
-		return Quantity;
-	}
 	
 	public void setDevice(Device d)
 	{
@@ -79,7 +79,7 @@ public class OrderDetails extends Item{
 		Price = price;
 		Fee = fee;
 		device = d;
-		Quantity = quantity;
+		setQuantity(quantity);
 		DueDate = dueDate;
 		components = c;
 	}

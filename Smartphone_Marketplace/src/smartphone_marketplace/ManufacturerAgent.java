@@ -1,6 +1,7 @@
 package smartphone_marketplace;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -30,7 +31,9 @@ import ontology.elements.*;
 public class ManufacturerAgent extends Agent{
 
 
-	private List<AID> supplierAgents = new ArrayList<>();
+	private AID supplier1AID;
+	private AID supplier2AID;
+	private List <AID> supplierAgents = new ArrayList<>();
 	private AID tickerAgent;
 	private List<AID> customerAgents = new ArrayList<>();
 	private Codec codec = new SLCodec();
@@ -38,8 +41,11 @@ public class ManufacturerAgent extends Agent{
 	int noOfCustomers = 3;
 	int w = 5;
 
-	HashMap<String, Double> stock1 = new HashMap<String, Double>();
-	HashMap<String, Double> stock2 = new HashMap<String, Double>();
+//	HashMap<String, Double> stock1 = new HashMap<String, Double>();
+//	HashMap<String, Double> stock2 = new HashMap<String, Double>();
+	
+	private static HashMap<Component, Double> stock1 = new HashMap<>();
+	private static HashMap<Component, Double> stock2 = new HashMap<>();
 
 	public void setup() {
 
@@ -60,19 +66,36 @@ public class ManufacturerAgent extends Agent{
 
 		}
 
-		stock1.put("5",(double)100);
-		stock1.put("7",(double)150);		
-		stock1.put("64",(double)25);
-		stock1.put("256",(double)50);		
-		stock1.put("4",(double)30);
-		stock1.put("8",(double)60);
-		stock1.put("2000",(double)70);
-		stock1.put("3000",(double)100);
+//		stock1.put("5",(double)100);
+//		stock1.put("7",(double)150);		
+//		stock1.put("64",(double)25);
+//		stock1.put("256",(double)50);		
+//		stock1.put("4",(double)30);
+//		stock1.put("8",(double)60);
+//		stock1.put("2000",(double)70);
+//		stock1.put("3000",(double)100);
+//
+//		stock2.put("64",(double)15);
+//		stock2.put("256",(double)40);		
+//		stock2.put("4",(double)20);
+//		stock2.put("8",(double)35);
+		
 
-		stock2.put("64",(double)15);
-		stock2.put("256",(double)40);		
-		stock2.put("4",(double)20);
-		stock2.put("8",(double)35);
+		stock1.put(new Component("Screen","5"), (double) 100);
+		stock1.put(new Component("Screen","7"), (double) 150);		
+		stock1.put(new Component("Storage","64"), (double) 25);
+		stock1.put(new Component("Storage","256"), (double) 50);		
+		stock1.put(new Component("RAM","4"), (double) 30);
+		stock1.put(new Component("RAM","8"), (double) 60);
+		stock1.put(new Component("Battery","2000"), (double) 70);
+		stock1.put(new Component("Battery","3000"), (double) 100);
+		
+		System.out.println(stock1);
+
+		stock2.put(new Component("Storage","64"),(double)15);
+		stock2.put(new Component("Storage","256"),(double)40);		
+		stock2.put(new Component("RAM","4"),(double)20);
+		stock2.put(new Component("RAM","8"),(double)35);
 
 		addBehaviour(new TickerWaiter(this));
 	}
@@ -125,37 +148,43 @@ public class ManufacturerAgent extends Agent{
 
 
 		public 	void action() {
-			System.out.println("Finding Customers");
 			String [] agents = { "supplier"};
 
 			for(String a : agents)
 			{
 
-				DFAgentDescription agentDesc = new DFAgentDescription();
-				ServiceDescription serviceDesc = new ServiceDescription();
-				serviceDesc.setType(a);
-				agentDesc.addServices(serviceDesc);
-				try{
-					DFAgentDescription[] agentsFound  = DFService.search(myAgent,agentDesc); 
-
-					for(DFAgentDescription aF : agentsFound)
-						supplierAgents.add(aF.getName()); // this is the AID
-				}
-				catch(FIPAException e) {
-					e.printStackTrace();
-				}
+				supplier1AID = new AID("Supplier1",AID.ISLOCALNAME);
+				supplier2AID = new AID("Supplier2",AID.ISLOCALNAME);	
+				
+				supplierAgents.add(supplier1AID);
+				supplierAgents.add(supplier2AID);
+				
+//				DFAgentDescription agentDesc = new DFAgentDescription();
+//				ServiceDescription serviceDesc = new ServiceDescription();
+//				serviceDesc.setType(a);
+//				agentDesc.addServices(serviceDesc);
+//				try{
+//					DFAgentDescription[] agentsFound  = DFService.search(myAgent,agentDesc); 
+//
+//					for(DFAgentDescription aF : agentsFound)
+//						supplierAgents.add(aF.getName()); // this is the AID
+//				}
+//				catch(FIPAException e) {
+//					e.printStackTrace();
+//				}
 			}
 
 		}
 	}
 
 	public class EndDayListener extends Behaviour {
-		private int customersDone = 0;
+		private int customersDone;
 		private List<Behaviour> toRemove;
 
 		public EndDayListener(Agent a, List<Behaviour> toRemove) {
 			super(a);
 			this.toRemove = toRemove;
+			this.customersDone = 0;
 		}
 
 		@Override
@@ -209,43 +238,91 @@ public class ManufacturerAgent extends Agent{
 		}
 
 	}
+	
 
 	private class OrderRequest extends Behaviour{
 
 		double acceptableProfitMargin = 1000;
-		
+		Boolean preferLower;
 		int ordersReceived = 0;
+		
+		OrderDetails od = new OrderDetails();
+		
+		
+		
+		void orderSupplies() {
+			ACLMessage messege = new ACLMessage(ACLMessage.REQUEST); // sellerAID is the AID of the Seller agent
+			messege.setLanguage(codec.getName());
+			messege.setOntology(ontology.getName()); 
+			for(Component c : od.getComponents())
+			{
+				ACLMessage msg = (ACLMessage)messege.clone();
+				PlaceOrder order = new PlaceOrder();			
+				order.setCustomer(myAgent.getAID());
+				c.setQuantity(od.getQuantity());
+				order.setItem(c);
+				Action requestOrder = new Action();
+				requestOrder.setAction(order);
+				
+				
+				
+				//if(supplierAgents.get(1).getLocalName().contains("1"))
+					
+				
+				if(preferLower && stock2.containsKey(c))
+				{
+					
+					requestOrder.setActor(supplier2AID);
+				}
+				else					
+					requestOrder.setActor(supplier1AID);
 
-		Boolean strategy(OrderDetails od) {
+				try {
+					// Let JADE convert from Java objects to string
+					getContentManager().fillContent(msg, requestOrder); //send the wrapper object
+					send(msg);
+					System.out.println("ordered " + c.getQuantity() +" "+ c + "(s) from " + requestOrder.getActor().getLocalName());
+				}
+				catch (CodecException ce) {
+					ce.printStackTrace();
+				}
+				catch (OntologyException oe) {
+					oe.printStackTrace();
+				} 
+			}
+		}
 
+		Boolean strategy() {
 
-			List<Component> components = od.getComponents();
 			Boolean accepted = true;															
 			double price = od.getPrice();
 			double fee = od.getFee();
 			double quantity = od.getQuantity();
 			double dueDate = od.getDueDate();
-			Boolean preferLower = (dueDate>4);
+			preferLower = (dueDate>4);
 			double componentsPrice = 0;
 			double cP = 0;
 			double expectedProfit =0;
 
-			for(Component c : components)
+//			for(Component c : od.getComponents())
+//			{
+//				cP = stock1.get(c.getSpec());								// this returns and double value in the stock list(HashMap) where the specification of component is the key, and price is the value.
+//				if(preferLower && stock2.get(c.getSpec()) != null)
+//					cP = stock2.get(c.getSpec());
+//
+//				componentsPrice += cP;
+//			}
+			
+			System.out.println(stock1);
+			for(Component comp : od.getComponents())
 			{
-				cP = stock1.get(c.getSpec());
-				if(preferLower && stock2.get(c.getSpec()) != null)
-					cP = stock2.get(c.getSpec());
-
-
-
-				componentsPrice += cP;
+				System.out.println(comp);
+				cP = stock1.get(comp);								// this returns and double value in the stock list(HashMap) where the specification of component is the key, and price is the value.
+				if(preferLower && stock2.containsKey(comp))
+					cP = stock2.get(comp);
+				componentsPrice += cP;				
 			}
 			
-
-
-			od.totalPrice = price * quantity - componentsPrice;
-			
-
 			double dd = dueDate;
 			if(dd>4) {
 				dd = 0;
@@ -256,25 +333,20 @@ public class ManufacturerAgent extends Agent{
 			}
 
 			
-			expectedProfit = od.totalPrice - (dd * fee);
-			
-
-//			expectedProfit =- w * od.getComponents().size() * 4;
-//			System.out.println("new Expected Profit = w * od.getComponents().size() * 4 =" + expectedProfit);
-			
-			
-			
-
-			if(expectedProfit<acceptableProfitMargin || (dueDate<4&&(4-dueDate*fee)>od.totalPrice))
-				accepted = false;
+			od.setOrderPrice(price * quantity - componentsPrice);
 			
 			System.out.println(od.toString());
-			System.out.println(od.totalPrice + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
-			System.out.println("expected = totalPrice:"+ od.totalPrice +" - " + "dd:" +dd + " * fee:" + fee);
-			System.out.println("Expected Profit = " + expectedProfit);
-
-			System.out.println(accepted);
+			System.out.println(od.getOrderPrice() + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
+			System.out.println("expected = totalPrice:"+ od.getOrderPrice() +" - " + "dd:" +dd + " * fee:" + fee);
 			
+			expectedProfit = od.getOrderPrice() - (dd * fee);
+			
+			if(expectedProfit<acceptableProfitMargin || (dueDate<4&&(4-dueDate*fee)>od.getOrderPrice()))
+				accepted = false;
+			
+			System.out.println("Expected Profit = " + expectedProfit);						
+			od.setOrderPrice(expectedProfit);
+			System.out.println(accepted);			
 			return accepted;
 		}
 
@@ -294,16 +366,18 @@ public class ManufacturerAgent extends Agent{
 							PlaceOrder order = (PlaceOrder)action;
 							Item it = order.getItem();
 							if(it instanceof OrderDetails){
-								OrderDetails od = (OrderDetails)it;	
+								od = (OrderDetails)it;	
 								System.out.println("order read");
 								ACLMessage orderMsg = new ACLMessage(ACLMessage.INFORM);
-								if(strategy(od))
+								if(strategy())
 								{
-									orderMsg.setContent("accept");
+									orderMsg.setContent("accept");									
+									orderSupplies();
 								}
 								else
 								{
 									orderMsg.setContent("reject");
+									
 								}
 								orderMsg.addReceiver(msg.getSender());
 								System.out.println(msg.getSender());
@@ -343,9 +417,6 @@ public class ManufacturerAgent extends Agent{
 			
 		}
 	}
-
-	
-	
 	
 	@Override
 	protected void takeDown() {

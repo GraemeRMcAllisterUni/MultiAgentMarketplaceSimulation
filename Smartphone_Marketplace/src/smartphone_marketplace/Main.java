@@ -30,11 +30,11 @@ public class Main {
 			
 			
 			
-			AgentController SupplierAgent1 = myContainer.createNewAgent("Supplier 1", SupplierAgent.class.getCanonicalName(),
+			AgentController SupplierAgent1 = myContainer.createNewAgent("Supplier1", SupplierAgent.class.getCanonicalName(),
 					null);
 			SupplierAgent1.start();
 			
-			AgentController SupplierAgent2 = myContainer.createNewAgent("Supplier 2", SupplierAgent.class.getCanonicalName(),
+			AgentController SupplierAgent2 = myContainer.createNewAgent("Supplier2", SupplierAgent.class.getCanonicalName(),
 					null);
 			SupplierAgent2.start();
 			

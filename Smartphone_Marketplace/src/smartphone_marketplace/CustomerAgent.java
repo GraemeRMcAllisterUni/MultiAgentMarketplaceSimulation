@@ -61,16 +61,11 @@ public class CustomerAgent extends Agent  {
 					MessageTemplate.MatchContent("reject"));			
 			ACLMessage msg = myAgent.receive(mt); 
 			if(msg != null) {
-				if(tickerAgent == null) {
-					tickerAgent = msg.getSender();
-				}
+			
 				if(msg.getContent().equals("accept")) {
 					System.out.println(myAgent.getLocalName() + ": offer accepted");
-
-
 				}
 				else if (msg.getContent().equals("reject")){
-					//termination message to end simulation
 					System.out.println(myAgent.getLocalName() + ": offcer rejected");
 				}
 			}

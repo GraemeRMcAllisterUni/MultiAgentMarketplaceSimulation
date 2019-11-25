@@ -6,6 +6,7 @@ import jade.content.onto.annotations.Slot;
 
 public class Item implements Concept {
 	
+	private double Quantity;
 	/*
 	private int orderNumber;
 	@Slot (mandatory = true)
@@ -19,5 +20,13 @@ public class Item implements Concept {
 	}
 	
 	*/
-	
+
+	public double getQuantity() {
+		return Quantity;
+	}
+
+	public void setQuantity(double quantity) {
+		this.Quantity = quantity;
+	}
+
 }

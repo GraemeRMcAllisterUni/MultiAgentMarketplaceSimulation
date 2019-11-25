@@ -1,9 +1,12 @@
 package ontology.elements;
 
+import java.util.Objects;
 
 public class Component extends Item {
+	private int id;	
 	private String type;	
 	private String spec;	
+	
 
 	public Component(){
 		super();
@@ -21,6 +24,9 @@ public class Component extends Item {
 	}
 	
 	public void setType(String type) {
+		if(type == "Screen")
+			this.id = 1;
+		
 		this.type = type;
 	}
 	
@@ -46,9 +52,17 @@ public class Component extends Item {
             return false;
         }
         Component c = (Component)o;
-        return type.equals(c.type)
-                && spec.equals(c.spec);
-
+        boolean same = (type.equals(c.getType())  && spec.equals(c.getSpec()));
+        return same;
     }
+
+	@Override
+	public int hashCode() {
+		return 17;
+	}
+    
+    
+    
+    
 		
 }
