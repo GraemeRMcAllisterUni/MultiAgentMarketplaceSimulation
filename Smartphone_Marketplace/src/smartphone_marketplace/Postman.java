@@ -122,7 +122,8 @@ public class Postman extends Agent  {
 				}
 			}
 
-			compSent.forEach((comp) ->{
+			compSent.forEach((comp) ->
+			{
 				PlaceOrder order = new PlaceOrder();			
 				order.setCustomer(myAgent.getAID());
 				order.setItem(comp);
@@ -144,8 +145,7 @@ public class Postman extends Agent  {
 					oe.printStackTrace();
 				} 
 
-			});
-			
+			});			
 			compSent.clear();
 		}
 	}

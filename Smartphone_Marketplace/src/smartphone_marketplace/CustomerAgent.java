@@ -61,7 +61,7 @@ public class CustomerAgent extends Agent  {
 					MessageTemplate.MatchContent("reject"));			
 			ACLMessage msg = myAgent.receive(mt); 
 			if(msg != null) {
-			
+
 				if(msg.getContent().equals("accept")) {
 					System.out.println(myAgent.getLocalName() + ": offer accepted");
 				}
@@ -94,7 +94,6 @@ public class CustomerAgent extends Agent  {
 					tickerAgent = msg.getSender();
 				}
 				if(msg.getContent().equals("new day")) {
-					System.out.println("Customer heard new day");
 					doWait(1000);
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
 					dailyActivity.addSubBehaviour(new RequestOrder());
@@ -188,17 +187,12 @@ public class CustomerAgent extends Agent  {
 				}
 			}
 
-			//device.setComponents(c);
-
 			double quantity = Math.floor(1 + 50 * Math.random());
 			double price = Math.floor(100 + 500 * Math.random());
 			double dueDate = Math.floor(1 + 10 * Math.random());
 			double fee = quantity * Math.floor(1 + 50 * Math.random());
 
-
-
 			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee, dueDate, c);
-
 
 			PlaceOrder order = new PlaceOrder();			
 			order.setCustomer(myAgent.getAID());
@@ -225,17 +219,16 @@ public class CustomerAgent extends Agent  {
 	}
 
 
-@Override
-protected void takeDown() {
-	//Deregister from the yellow pages
-	try{
-		DFService.deregister(this);
+	@Override
+	protected void takeDown() {
+		//Deregister from the yellow pages
+		try{
+			DFService.deregister(this);
+		}
+		catch(FIPAException e){
+			e.printStackTrace();
+		}
 	}
-	catch(FIPAException e){
-		e.printStackTrace();
-	}
-
-}
 
 }
 

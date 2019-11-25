@@ -30,23 +30,26 @@ public class Main {
 			
 			
 			
-			AgentController SupplierAgent1 = myContainer.createNewAgent("Supplier1", SupplierAgent.class.getCanonicalName(),
+			AgentController SupplierAgent1 = myContainer.createNewAgent("Supplier 1", SupplierAgent.class.getCanonicalName(),
 					null);
 			SupplierAgent1.start();
 			
-			AgentController SupplierAgent2 = myContainer.createNewAgent("Supplier2", SupplierAgent.class.getCanonicalName(),
+			AgentController SupplierAgent2 = myContainer.createNewAgent("Supplier 2", SupplierAgent.class.getCanonicalName(),
 					null);
 			SupplierAgent2.start();
 			
 			
 			AgentController snifferDog = myContainer.createNewAgent("Sniffer Dog", Sniffer.class.getCanonicalName(),
 					null);
-			snifferDog.start();
-			
+			snifferDog.start();			
 
 			AgentController manuAgent = myContainer.createNewAgent("Manufacturer", ManufacturerAgent.class.getCanonicalName(),
 					null);
 			manuAgent.start();
+			
+			AgentController postmanAgent = myContainer.createNewAgent("Postman", Postman.class.getCanonicalName(),
+					null);
+			postmanAgent.start();
 			
 			AgentController tickerAgent = myContainer.createNewAgent("ticker", DayTicker.class.getCanonicalName(),
 					null);

@@ -16,6 +16,7 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.SequentialBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -29,11 +30,12 @@ import ontology.elements.*;
 public class SupplierAgent extends Agent {
 
 	private AID tickerAgent;
+	private AID postman;
 	private Codec codec = new SLCodec();
 	private Ontology ontology = MarketplaceOntology.getInstance();
 
 	protected void setup(){
-		
+
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		ServiceDescription sd = new ServiceDescription();
@@ -46,88 +48,45 @@ public class SupplierAgent extends Agent {
 		catch(FIPAException e){
 			e.printStackTrace();
 		}
-		
+
+		postman = new AID("postman",AID.ISLOCALNAME);
+
 		///Component c = new Componenet();	
-//		
-//		HashMap<Component, Double> stock = new HashMap<Component, Double>();
-//		
-//		
-//
-//		if(this.getName().contains("Supplier 1"))
-//		{
-//			stock.put(new Component("Screen","5"),(double)100);
-//			stock.put(new Component("Screen","7"),(double)150);		
-//			stock.put(new Component("Storage","64"),(double)25);
-//			stock.put(new Component("Storage","256"),(double)50);		
-//			stock.put(new Component("RAM","4"),(double)30);
-//			stock.put(new Component("RAM","8"),(double)60);
-//			stock.put(new Component("Battery","2000"),(double)70);
-//			stock.put(new Component("Battery","3000"),(double)100);
-//			//System.out.println("Supplier 1 stock: " + stock);
-//		}
-//		else if (this.getName().contains("Supplier 2")) 
-//		{
-//			
-//			stock.put(new Component("Storage","64"),(double)15);
-//			stock.put(new Component("Storage","256"),(double)40);		
-//			stock.put(new Component("RAM","4"),(double)20);
-//			stock.put(new Component("RAM","8"),(double)35);
-//			//System.out.println("Supplier 2 stock: " + stock);
-//		}
-//		else
-//			System.out.println("Invalid Supplier");
+
+		HashMap<Component, Double> stock = new HashMap<Component, Double>();
+
+
+		System.out.println(this.getName());
+
+		if(this.getName().contains("Supplier 1"))
+		{
+			stock.put(new Component("Screen","5"),(double)100);
+			stock.put(new Component("Screen","7"),(double)150);		
+			stock.put(new Component("Storage","64"),(double)25);
+			stock.put(new Component("Storage","256"),(double)50);		
+			stock.put(new Component("RAM","4"),(double)30);
+			stock.put(new Component("RAM","8"),(double)60);
+			stock.put(new Component("Battery","2000"),(double)70);
+			stock.put(new Component("Battery","3000"),(double)100);
+			//System.out.println("Supplier 1 stock: " + stock);
+		}
+		else if (this.getName().contains("Supplier 2")) 
+		{
+
+			stock.put(new Component("Storage","64"),(double)15);
+			stock.put(new Component("Storage","256"),(double)40);		
+			stock.put(new Component("RAM","4"),(double)20);
+			stock.put(new Component("RAM","8"),(double)35);
+			//System.out.println("Supplier 2 stock: " + stock);
+		}
+		else
+			System.out.println("Invalid Supplier");
 
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);
 
 
 		addBehaviour(new TickerWaiter(this));
-	}
-	
-	private class OrderRequest extends Behaviour{
-		
-		public void action() {			
-			
-			//This behaviour should only respond to REQUEST messages
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST); 
-			ACLMessage msg = receive(mt);
-			if(msg != null){
-				try {
-					ContentElement ce = null;
-					ce = getContentManager().extractContent(msg);
-					if(ce instanceof Action) {
-						Concept action = ((Action)ce).getAction();
-						if (action instanceof PlaceOrder) {
-							PlaceOrder order = (PlaceOrder)action;
-							Item it = order.getItem();
-							if(it instanceof OrderDetails){
-//								od = (OrderDetails)it;	
-//								System.out.println("order read");
-//								ACLMessage orderMsg = new ACLMessage(ACLMessage.INFORM);
-//								orderMsg.addReceiver(msg.getSender());
-//								System.out.println(msg.getSender());
-//								myAgent.send(orderMsg);
-
-						}
-						}
-					}
-				}
-				catch (CodecException ce) {
-					ce.printStackTrace();
-				}
-				catch (OntologyException oe) {
-					oe.printStackTrace();
-				}
-
-			}
-		}
-
-		@Override
-		public boolean done() {
-			// TODO Auto-generated method stub
-			return false;
-		}
-		
 	}
 
 	public class TickerWaiter extends CyclicBehaviour {
@@ -148,8 +107,10 @@ public class SupplierAgent extends Agent {
 				}
 				if(msg.getContent().equals("new day")) {
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
+					OrderRequest or = new OrderRequest();
+					cyclicBehaviours.add(or);
+					myAgent.addBehaviour(or);
 					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
-					 
 				}
 				else {
 					//termination message to end simulation
@@ -162,11 +123,66 @@ public class SupplierAgent extends Agent {
 		}
 
 	}
-	
+
+	private class OrderRequest extends CyclicBehaviour{
+
+
+
+		public void action() {			
+
+			//This behaviour should only respond to REQUEST messages
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST); //this is messege (component and quantity)
+			ACLMessage msg = receive(mt);
+			if(msg != null){
+				try {
+					ContentElement ce = null;
+					ce = getContentManager().extractContent(msg);
+					if(ce instanceof Action) {
+						Concept action = ((Action)ce).getAction();
+						if (action instanceof PlaceOrder) {
+							PlaceOrder order = (PlaceOrder)action;
+							ACLMessage postComponent = new ACLMessage(ACLMessage.REQUEST); // sellerAID is the AID of the Seller agent
+							postComponent.setLanguage(codec.getName());
+							postComponent.setOntology(ontology.getName()); 
+
+							order.setCustomer(myAgent.getAID());
+							Action requestOrder = new Action();
+							requestOrder.setAction(order);
+							requestOrder.setActor(postman);
+							try {
+								// Let JADE convert from Java objects to string
+								getContentManager().fillContent(msg, requestOrder); //send the wrapper object
+								send(postComponent);
+							}
+							catch (CodecException cex) {
+								cex.printStackTrace();
+							}
+							catch (OntologyException oe) {
+								oe.printStackTrace();
+							} 
+
+						}
+
+					}
+				}
+				catch (CodecException ce) {
+					ce.printStackTrace();
+				}
+				catch (OntologyException oe) {
+					oe.printStackTrace();
+				}
+
+			}
+		}
+
+
+	}
+
+
+
 	public class EndDayListener extends CyclicBehaviour {
-		private int buyersFinished = 0;
 		private List<Behaviour> toRemove;
-		
+
 		public EndDayListener(Agent a, List<Behaviour> toRemove) {
 			super(a);
 			this.toRemove = toRemove;
@@ -177,22 +193,23 @@ public class SupplierAgent extends Agent {
 			MessageTemplate mt = MessageTemplate.MatchContent("done");
 			ACLMessage msg = myAgent.receive(mt);
 			if(msg != null) {
-				buyersFinished++;
+				if(msg.getContent().equals("done")) {
+					ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+					tick.setContent("done");
+					tick.addReceiver(tickerAgent);
+					myAgent.send(tick);
+					//remove behaviours
+					for(Behaviour b : toRemove) {
+						myAgent.removeBehaviour(b);
+					}
+					myAgent.removeBehaviour(this);
+				}				
 			}
 			else {
 				block();
 			}
 
-				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-				tick.setContent("done");
-				tick.addReceiver(tickerAgent);
-				myAgent.send(tick);
-				//remove behaviours
-				for(Behaviour b : toRemove) {
-					myAgent.removeBehaviour(b);
-				}
-				myAgent.removeBehaviour(this);
-			}
 		}
-		
 	}
+
+}

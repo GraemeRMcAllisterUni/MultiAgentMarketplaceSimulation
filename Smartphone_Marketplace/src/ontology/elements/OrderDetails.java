@@ -101,12 +101,11 @@ public class OrderDetails extends Item{
 
 	@Override
 	public String toString() {
-		return "OrderDetails [getComponents()=" + getComponents() + ", getPrice()=" + getPrice() + ", getFee()="
-				+ getFee() + ", getQuantity()=" + getQuantity() + ", getDevice()=" + getDevice() + ", getDueDate()="
-				+ getDueDate() + "]";
+		return "OrderDetails [Price=" + Price + ", Fee=" + Fee + ", DueDate=" + DueDate + ", Fulfilled=" + Fulfilled
+				+ ", device=" + device + ", OrderPrice=" + OrderPrice + "]";
 	}
 	
-
+	
 
 	
 

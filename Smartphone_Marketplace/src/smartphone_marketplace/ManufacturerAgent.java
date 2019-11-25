@@ -40,12 +40,14 @@ public class ManufacturerAgent extends Agent{
 	private Ontology ontology = MarketplaceOntology.getInstance();
 	int noOfCustomers = 3;
 	int w = 5;
-
-//	HashMap<String, Double> stock1 = new HashMap<String, Double>();
-//	HashMap<String, Double> stock2 = new HashMap<String, Double>();
 	
+	double Budget = 0;
+	double Profit = 0;
+
+
 	private static HashMap<Component, Double> stock1 = new HashMap<>();
 	private static HashMap<Component, Double> stock2 = new HashMap<>();
+	private static HashMap<OrderDetails, Double> orderCatalogue = new HashMap<>();
 
 	public void setup() {
 
@@ -66,20 +68,6 @@ public class ManufacturerAgent extends Agent{
 
 		}
 
-//		stock1.put("5",(double)100);
-//		stock1.put("7",(double)150);		
-//		stock1.put("64",(double)25);
-//		stock1.put("256",(double)50);		
-//		stock1.put("4",(double)30);
-//		stock1.put("8",(double)60);
-//		stock1.put("2000",(double)70);
-//		stock1.put("3000",(double)100);
-//
-//		stock2.put("64",(double)15);
-//		stock2.put("256",(double)40);		
-//		stock2.put("4",(double)20);
-//		stock2.put("8",(double)35);
-		
 
 		stock1.put(new Component("Screen","5"), (double) 100);
 		stock1.put(new Component("Screen","7"), (double) 150);		
@@ -89,8 +77,6 @@ public class ManufacturerAgent extends Agent{
 		stock1.put(new Component("RAM","8"), (double) 60);
 		stock1.put(new Component("Battery","2000"), (double) 70);
 		stock1.put(new Component("Battery","3000"), (double) 100);
-		
-		System.out.println(stock1);
 
 		stock2.put(new Component("Storage","64"),(double)15);
 		stock2.put(new Component("Storage","256"),(double)40);		
@@ -118,12 +104,12 @@ public class ManufacturerAgent extends Agent{
 				}
 				if(msg.getContent().equals("new day")) {
 					//spawn new sequential behaviour for day's activities
-					
+
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
-					
+
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
 					OrderRequest or = new OrderRequest();
-					
+
 					dailyActivity.addSubBehaviour(new FindSuppliers());
 					dailyActivity.addSubBehaviour(or);
 					cyclicBehaviours.add(or);
@@ -148,31 +134,13 @@ public class ManufacturerAgent extends Agent{
 
 
 		public 	void action() {
-			String [] agents = { "supplier"};
 
-			for(String a : agents)
-			{
+			supplier1AID = new AID("Supplier 1",AID.ISLOCALNAME);
+			supplier2AID = new AID("Supplier 2",AID.ISLOCALNAME);	
 
-				supplier1AID = new AID("Supplier1",AID.ISLOCALNAME);
-				supplier2AID = new AID("Supplier2",AID.ISLOCALNAME);	
-				
-				supplierAgents.add(supplier1AID);
-				supplierAgents.add(supplier2AID);
-				
-//				DFAgentDescription agentDesc = new DFAgentDescription();
-//				ServiceDescription serviceDesc = new ServiceDescription();
-//				serviceDesc.setType(a);
-//				agentDesc.addServices(serviceDesc);
-//				try{
-//					DFAgentDescription[] agentsFound  = DFService.search(myAgent,agentDesc); 
-//
-//					for(DFAgentDescription aF : agentsFound)
-//						supplierAgents.add(aF.getName()); // this is the AID
-//				}
-//				catch(FIPAException e) {
-//					e.printStackTrace();
-//				}
-			}
+			supplierAgents.add(supplier1AID);
+			supplierAgents.add(supplier2AID);
+
 
 		}
 	}
@@ -201,16 +169,15 @@ public class ManufacturerAgent extends Agent{
 			}
 			if(customersDone >= noOfCustomers)
 			{
-				ACLMessage msgSupplier = new ACLMessage(ACLMessage.INFORM);
+				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
 
 				for(AID agent : supplierAgents) {
-					msgSupplier.addReceiver(agent);
+					tick.addReceiver(agent);
 				}
-				myAgent.send(msgSupplier);
 				//we are finished
-				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-				tick.setContent("done");
+				
 				tick.addReceiver(tickerAgent);
+				tick.setContent("done");
 				myAgent.send(tick);
 				//remove behaviours
 				toRemove.add(this);
@@ -228,28 +195,28 @@ public class ManufacturerAgent extends Agent{
 			return customersDone >= noOfCustomers;
 		}
 	}
-	
+
 	private class ReceiveSupplies extends CyclicBehaviour{
 
 		@Override
 		public void action() {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 	}
-	
+
 
 	private class OrderRequest extends Behaviour{
 
 		double acceptableProfitMargin = 1000;
 		Boolean preferLower;
 		int ordersReceived = 0;
-		
+
 		OrderDetails od = new OrderDetails();
-		
-		
-		
+
+
+
 		void orderSupplies() {
 			ACLMessage messege = new ACLMessage(ACLMessage.REQUEST); // sellerAID is the AID of the Seller agent
 			messege.setLanguage(codec.getName());
@@ -263,20 +230,17 @@ public class ManufacturerAgent extends Agent{
 				order.setItem(c);
 				Action requestOrder = new Action();
 				requestOrder.setAction(order);
-				
-				
-				
-				//if(supplierAgents.get(1).getLocalName().contains("1"))
-					
-				
+
 				if(preferLower && stock2.containsKey(c))
 				{
-					
+					msg.addReceiver(supplier2AID);
 					requestOrder.setActor(supplier2AID);
 				}
-				else					
+				else				
+				{
 					requestOrder.setActor(supplier1AID);
-
+					msg.addReceiver(supplier1AID);
+				}
 				try {
 					// Let JADE convert from Java objects to string
 					getContentManager().fillContent(msg, requestOrder); //send the wrapper object
@@ -304,15 +268,15 @@ public class ManufacturerAgent extends Agent{
 			double cP = 0;
 			double expectedProfit =0;
 
-//			for(Component c : od.getComponents())
-//			{
-//				cP = stock1.get(c.getSpec());								// this returns and double value in the stock list(HashMap) where the specification of component is the key, and price is the value.
-//				if(preferLower && stock2.get(c.getSpec()) != null)
-//					cP = stock2.get(c.getSpec());
-//
-//				componentsPrice += cP;
-//			}
-			
+			//			for(Component c : od.getComponents())
+			//			{
+			//				cP = stock1.get(c.getSpec());								// this returns and double value in the stock list(HashMap) where the specification of component is the key, and price is the value.
+			//				if(preferLower && stock2.get(c.getSpec()) != null)
+			//					cP = stock2.get(c.getSpec());
+			//
+			//				componentsPrice += cP;
+			//			}
+
 			System.out.println(stock1);
 			for(Component comp : od.getComponents())
 			{
@@ -322,7 +286,7 @@ public class ManufacturerAgent extends Agent{
 					cP = stock2.get(comp);
 				componentsPrice += cP;				
 			}
-			
+
 			double dd = dueDate;
 			if(dd>4) {
 				dd = 0;
@@ -332,18 +296,18 @@ public class ManufacturerAgent extends Agent{
 				dd = 4 - dd;
 			}
 
-			
+
 			od.setOrderPrice(price * quantity - componentsPrice);
-			
+
 			System.out.println(od.toString());
 			System.out.println(od.getOrderPrice() + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
 			System.out.println("expected = totalPrice:"+ od.getOrderPrice() +" - " + "dd:" +dd + " * fee:" + fee);
-			
+
 			expectedProfit = od.getOrderPrice() - (dd * fee);
-			
+
 			if(expectedProfit<acceptableProfitMargin || (dueDate<4&&(4-dueDate*fee)>od.getOrderPrice()))
 				accepted = false;
-			
+
 			System.out.println("Expected Profit = " + expectedProfit);						
 			od.setOrderPrice(expectedProfit);
 			System.out.println(accepted);			
@@ -352,7 +316,7 @@ public class ManufacturerAgent extends Agent{
 
 		@Override
 		public void action() {			
-			
+
 			//This behaviour should only respond to REQUEST messages
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST); 
 			ACLMessage msg = receive(mt);
@@ -371,19 +335,20 @@ public class ManufacturerAgent extends Agent{
 								ACLMessage orderMsg = new ACLMessage(ACLMessage.INFORM);
 								if(strategy())
 								{
-									orderMsg.setContent("accept");									
+									orderMsg.setContent("accept");
+									//orderCatalogue.put(od, value)
 									orderSupplies();
 								}
 								else
 								{
 									orderMsg.setContent("reject");
-									
+
 								}
 								orderMsg.addReceiver(msg.getSender());
 								System.out.println(msg.getSender());
 								myAgent.send(orderMsg);
 								ordersReceived++;
-						}
+							}
 						}
 					}
 				}
@@ -396,7 +361,7 @@ public class ManufacturerAgent extends Agent{
 
 			}
 		}
-		
+
 		public void reset() {
 			ordersReceived = 0;
 			super.reset();
@@ -409,15 +374,14 @@ public class ManufacturerAgent extends Agent{
 			else	
 				return false;
 		}
-		
-		
+
 		public int onEnd(){		
 			reset();
 			return 0;
-			
+
 		}
 	}
-	
+
 	@Override
 	protected void takeDown() {
 		//Deregister from the yellow pages
