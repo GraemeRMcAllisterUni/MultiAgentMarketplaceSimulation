@@ -3,7 +3,6 @@ package ontology.elements;
 import java.util.Objects;
 
 public class Component extends Item {
-	private int id;	
 	private String type;	
 	private String spec;	
 	
@@ -23,10 +22,7 @@ public class Component extends Item {
 		return type;
 	}
 	
-	public void setType(String type) {
-		if(type == "Screen")
-			this.id = 1;
-		
+	public void setType(String type) {		
 		this.type = type;
 	}
 	

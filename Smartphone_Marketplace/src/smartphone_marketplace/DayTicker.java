@@ -35,7 +35,7 @@ public class DayTicker extends Agent {
 			e.printStackTrace();
 		}
 		//wait for the other agents to start
-		doWait(20000);
+		doWait(10000);
 		addBehaviour(new SynchAgentsBehaviour(this));
 	}
 
@@ -107,6 +107,7 @@ public class DayTicker extends Agent {
 				ACLMessage msg = myAgent.receive(mt);
 				if(msg != null) {
 					numFinReceived++;
+					System.out.println(msg.getSender().getLocalName() + " sent ticker done messege");
 					if(numFinReceived >= marketplaceAgents.size()) {
 						step++;
 					}

@@ -21,7 +21,6 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import ontology.MarketplaceOntology;
 import ontology.elements.*;
-import smartphone_marketplace.ManufacturerAgent.EndDayListener;
 
 import java.util.List;
 import jade.domain.DFService;
@@ -57,17 +56,18 @@ public class CustomerAgent extends Agent  {
 
 		@Override
 		public void action() {
-			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchContent("accept"),
-					MessageTemplate.MatchContent("reject"));			
+			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.AGREE),
+					MessageTemplate.MatchPerformative(ACLMessage.REFUSE));			
 			ACLMessage msg = myAgent.receive(mt); 
 			if(msg != null) {
-
-				if(msg.getContent().equals("accept")) {
-					System.out.println(myAgent.getLocalName() + ": offer accepted");
+				if(msg.getPerformative()==ACLMessage.AGREE) {
+					//System.out.println(myAgent.getLocalName() + ": offer accepted");
 				}
-				else if (msg.getContent().equals("reject")){
-					System.out.println(myAgent.getLocalName() + ": offcer rejected");
+				else if (msg.getPerformative()==ACLMessage.REFUSE){
+					//System.out.println(myAgent.getLocalName() + ": offer rejected");
 				}
+				else
+					block();
 			}
 			else{
 				block();
@@ -94,7 +94,6 @@ public class CustomerAgent extends Agent  {
 					tickerAgent = msg.getSender();
 				}
 				if(msg.getContent().equals("new day")) {
-					doWait(1000);
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
 					dailyActivity.addSubBehaviour(new RequestOrder());
 					dailyActivity.addSubBehaviour(new OrderResponse());
@@ -143,13 +142,7 @@ public class CustomerAgent extends Agent  {
 
 		@Override
 		public void action() {
-			boolean sent = false;
 			// Prepare the action request message
-			ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-			msg.addReceiver(manufacturerAID); // sellerAID is the AID of the Seller agent
-			msg.setLanguage(codec.getName());
-			msg.setOntology(ontology.getName()); 
-
 			Device device = new Device();
 			List<Component> c = new ArrayList<Component>();
 			{
@@ -193,8 +186,13 @@ public class CustomerAgent extends Agent  {
 			double fee = quantity * Math.floor(1 + 50 * Math.random());
 
 			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee, dueDate, c);
+			
+			ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+			msg.addReceiver(manufacturerAID); // sellerAID is the AID of the Seller agent
+			msg.setLanguage(codec.getName());
+			msg.setOntology(ontology.getName()); 
 
-			PlaceOrder order = new PlaceOrder();			
+			Order order = new Order();			
 			order.setCustomer(myAgent.getAID());
 			order.setItem(orderDetails);
 

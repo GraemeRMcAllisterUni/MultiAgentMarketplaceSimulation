@@ -49,7 +49,7 @@ public class SupplierAgent extends Agent {
 			e.printStackTrace();
 		}
 
-		postman = new AID("postman",AID.ISLOCALNAME);
+		postman = new AID("Postman",AID.ISLOCALNAME);
 
 		///Component c = new Componenet();	
 
@@ -84,7 +84,6 @@ public class SupplierAgent extends Agent {
 
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);
-
 
 		addBehaviour(new TickerWaiter(this));
 	}
@@ -139,19 +138,26 @@ public class SupplierAgent extends Agent {
 					ce = getContentManager().extractContent(msg);
 					if(ce instanceof Action) {
 						Concept action = ((Action)ce).getAction();
-						if (action instanceof PlaceOrder) {
-							PlaceOrder order = (PlaceOrder)action;
+						if (action instanceof Order) {						
+							
+							
 							ACLMessage postComponent = new ACLMessage(ACLMessage.REQUEST); // sellerAID is the AID of the Seller agent
+							postComponent.addReceiver(postman);
 							postComponent.setLanguage(codec.getName());
 							postComponent.setOntology(ontology.getName()); 
-
+							
+							Order order = new Order();
+							order = (Order)action;
 							order.setCustomer(myAgent.getAID());
-							Action requestOrder = new Action();
+							order.setItem(order.getItem());
+							
+							Action requestOrder = new Action();							
 							requestOrder.setAction(order);
 							requestOrder.setActor(postman);
+							
 							try {
 								// Let JADE convert from Java objects to string
-								getContentManager().fillContent(msg, requestOrder); //send the wrapper object
+								getContentManager().fillContent(postComponent, requestOrder); //send the wrapper object
 								send(postComponent);
 							}
 							catch (CodecException cex) {
@@ -197,6 +203,7 @@ public class SupplierAgent extends Agent {
 					ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
 					tick.setContent("done");
 					tick.addReceiver(tickerAgent);
+					tick.addReceiver(postman);
 					myAgent.send(tick);
 					//remove behaviours
 					for(Behaviour b : toRemove) {

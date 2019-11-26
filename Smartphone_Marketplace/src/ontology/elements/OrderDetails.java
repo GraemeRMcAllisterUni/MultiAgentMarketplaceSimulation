@@ -2,78 +2,70 @@ package ontology.elements;
 
 import java.util.List;
 
+import jade.content.onto.annotations.AggregateSlot;
+import jade.content.onto.annotations.Slot;
 import ontology.elements.Item;
 
-public class OrderDetails extends Item{
-	
+public class OrderDetails extends Item {
+
 	private double Price;
 	private double Fee;
 	private double DueDate;
 	private boolean Fulfilled;
-	private	Device device;
-	private double OrderPrice;
+	private Device device;
+	//private double OrderPrice;
 	
 	private List<Component> components;
 
-	public double getOrderPrice() {
-		return OrderPrice;
-	}
+//	public double getOrderPrice() {
+//		return OrderPrice;
+//	}
+//
+//	public void setOrderPrice(double orderPrice) {
+//		OrderPrice = orderPrice;
+//	}
 
-
-	public void setOrderPrice(double orderPrice) {
-		OrderPrice = orderPrice;
-	}
-
-	
-	
 	public OrderDetails() {
-		super();	
+		super();
 	}
-	
-	
+
 	public void setPrice(double price) {
-		
-		this.Price = price;		
+
+		this.Price = price;
 	}
-	
+
+	@AggregateSlot(cardMin= 1)
 	public List<Component> getComponents() {
-		
-		return components;	
+
+		return components;
 	}
-	
-	public void setComponents(List<Component> c)
-	{
+
+	public void setComponents(List<Component> c) {
 		this.components = c;
 	}
-	
-	
-	
+
+	@Slot(mandatory = true)
 	public double getPrice() {
-		
+
 		return Price;
 	}
-	
-	
+
 	public double getFee() {
 		return Fee;
 	}
-	
+
 	public void setFee(double fee) {
-		this.Fee = fee;	
-			
+		this.Fee = fee;
+
 	}
-	
-	
-	public void setDevice(Device d)
-	{
+
+	public void setDevice(Device d) {
 		this.device = d;
 	}
-	
-	public Device getDevice()
-	{
+
+	public Device getDevice() {
 		return device;
 	}
-	
 
 	public OrderDetails(Device d, double quantity, double price, double fee, double dueDate, List<Component> c) {
 		Price = price;
@@ -83,7 +75,7 @@ public class OrderDetails extends Item{
 		DueDate = dueDate;
 		components = c;
 	}
-	
+
 	/**
 	 * @return the dueDate
 	 */
@@ -98,15 +90,10 @@ public class OrderDetails extends Item{
 		DueDate = dueDate;
 	}
 
-
 	@Override
 	public String toString() {
 		return "OrderDetails [Price=" + Price + ", Fee=" + Fee + ", DueDate=" + DueDate + ", Fulfilled=" + Fulfilled
-				+ ", device=" + device + ", OrderPrice=" + OrderPrice + "]";
+				+ ", device=" + device +"]"; //", OrderPrice=" + OrderPrice + 
 	}
-	
-	
-
-	
 
 }

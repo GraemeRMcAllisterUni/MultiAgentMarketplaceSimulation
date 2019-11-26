@@ -40,7 +40,8 @@ public class ManufacturerAgent extends Agent{
 	private Ontology ontology = MarketplaceOntology.getInstance();
 	int noOfCustomers = 3;
 	int w = 5;
-	
+	private static HashMap<Component, Double> Warehouse = new HashMap<>();
+
 	double Budget = 0;
 	double Profit = 0;
 
@@ -108,14 +109,17 @@ public class ManufacturerAgent extends Agent{
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
 
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
+					FindSuppliers fs = new FindSuppliers();
 					OrderRequest or = new OrderRequest();
-
-					dailyActivity.addSubBehaviour(new FindSuppliers());
+					ReceiveSupplies rs = new ReceiveSupplies();
+					dailyActivity.addSubBehaviour(fs);
 					dailyActivity.addSubBehaviour(or);
+					dailyActivity.addSubBehaviour(rs);					
 					cyclicBehaviours.add(or);
-					dailyActivity.addSubBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
-					myAgent.addBehaviour(dailyActivity);
+					cyclicBehaviours.add(fs);
 
+					myAgent.addBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
+					myAgent.addBehaviour(dailyActivity);
 
 				}
 				else {
@@ -134,14 +138,10 @@ public class ManufacturerAgent extends Agent{
 
 
 		public 	void action() {
-
 			supplier1AID = new AID("Supplier 1",AID.ISLOCALNAME);
 			supplier2AID = new AID("Supplier 2",AID.ISLOCALNAME);	
-
 			supplierAgents.add(supplier1AID);
 			supplierAgents.add(supplier2AID);
-
-
 		}
 	}
 
@@ -167,23 +167,25 @@ public class ManufacturerAgent extends Agent{
 			{
 				block();
 			}
-			if(customersDone >= noOfCustomers)
+			if(customersDone == noOfCustomers)
 			{
 				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-
-				for(AID agent : supplierAgents) {
-					tick.addReceiver(agent);
-				}
-				//we are finished
-				
+				supplierAgents.forEach(sa -> tick.addReceiver(sa));
+				tick.setContent("done"); 
+				myAgent.send(tick); // telling suppliers no more orders for components
+			}
+			else if(customersDone > noOfCustomers)
+			{
+				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+				//we are finished				
 				tick.addReceiver(tickerAgent);
 				tick.setContent("done");
 				myAgent.send(tick);
 				//remove behaviours
-				toRemove.add(this);
 				for(Behaviour b : toRemove) {
 					myAgent.removeBehaviour(b);
 				}
+				myAgent.removeBehaviour(this);
 				//myAgent.removeBehaviour(this);
 				System.out.println("manufacturer done");
 			}
@@ -196,14 +198,52 @@ public class ManufacturerAgent extends Agent{
 		}
 	}
 
-	private class ReceiveSupplies extends CyclicBehaviour{
+	private class ReceiveSupplies extends OneShotBehaviour{
 
 		@Override
 		public void action() {
-			// TODO Auto-generated method stub
+
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST); 
+			ACLMessage msg = receive(mt);
+			if(msg != null){
+				try {
+					ContentElement ce = null;
+					ce = getContentManager().extractContent(msg);
+					if(ce instanceof Action) {
+						Concept action = ((Action)ce).getAction();
+						if (action instanceof Order) {
+							Order order = (Order)action;
+							Item it = order.getItem();
+							if(it instanceof Component){
+								Component c = new Component();
+								c = (Component)it;
+
+								double stock = c.getQuantity();
+								if(Warehouse.containsKey(c))
+								{								
+									stock =+ Warehouse.get(c);
+									Warehouse.replace(c, Warehouse.get(c), stock);
+								}
+								else
+									Warehouse.put(c, stock);
+
+								System.out.println(Warehouse);
+
+
+							}
+						}
+					}
+				}
+				catch (CodecException ce) {
+					ce.printStackTrace();
+				}
+				catch (OntologyException oe) {
+					oe.printStackTrace();
+				}				
+
+			}
 
 		}
-
 	}
 
 
@@ -215,8 +255,6 @@ public class ManufacturerAgent extends Agent{
 
 		OrderDetails od = new OrderDetails();
 
-
-
 		void orderSupplies() {
 			ACLMessage messege = new ACLMessage(ACLMessage.REQUEST); // sellerAID is the AID of the Seller agent
 			messege.setLanguage(codec.getName());
@@ -224,28 +262,32 @@ public class ManufacturerAgent extends Agent{
 			for(Component c : od.getComponents())
 			{
 				ACLMessage msg = (ACLMessage)messege.clone();
-				PlaceOrder order = new PlaceOrder();			
+				Order order = new Order();			
 				order.setCustomer(myAgent.getAID());
 				c.setQuantity(od.getQuantity());
 				order.setItem(c);
 				Action requestOrder = new Action();
 				requestOrder.setAction(order);
 
+
 				if(preferLower && stock2.containsKey(c))
 				{
 					msg.addReceiver(supplier2AID);
 					requestOrder.setActor(supplier2AID);
+					c.setPrice(stock2.get(c));
 				}
 				else				
 				{
 					requestOrder.setActor(supplier1AID);
 					msg.addReceiver(supplier1AID);
+					c.setPrice(stock1.get(c));
 				}
 				try {
 					// Let JADE convert from Java objects to string
 					getContentManager().fillContent(msg, requestOrder); //send the wrapper object
 					send(msg);
-					System.out.println("ordered " + c.getQuantity() +" "+ c + "(s) from " + requestOrder.getActor().getLocalName());
+					System.out.println("ordered " + c.getQuantity() +" "+ c + "(s) from " + requestOrder.getActor().getLocalName() + " for £" + c.getPrice() + " per component");
+					Profit = Profit - c.getPrice();
 				}
 				catch (CodecException ce) {
 					ce.printStackTrace();
@@ -266,18 +308,8 @@ public class ManufacturerAgent extends Agent{
 			preferLower = (dueDate>4);
 			double componentsPrice = 0;
 			double cP = 0;
-			double expectedProfit =0;
+			double expectedProfit = 0;
 
-			//			for(Component c : od.getComponents())
-			//			{
-			//				cP = stock1.get(c.getSpec());								// this returns and double value in the stock list(HashMap) where the specification of component is the key, and price is the value.
-			//				if(preferLower && stock2.get(c.getSpec()) != null)
-			//					cP = stock2.get(c.getSpec());
-			//
-			//				componentsPrice += cP;
-			//			}
-
-			System.out.println(stock1);
 			for(Component comp : od.getComponents())
 			{
 				System.out.println(comp);
@@ -297,19 +329,18 @@ public class ManufacturerAgent extends Agent{
 			}
 
 
-			od.setOrderPrice(price * quantity - componentsPrice);
+			expectedProfit = price * quantity - componentsPrice;
 
 			System.out.println(od.toString());
-			System.out.println(od.getOrderPrice() + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
-			System.out.println("expected = totalPrice:"+ od.getOrderPrice() +" - " + "dd:" +dd + " * fee:" + fee);
+			System.out.println(expectedProfit + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
+			System.out.println("expected = totalPrice:"+ expectedProfit +" - " + "dd:" +dd + " * fee:" + fee);
 
-			expectedProfit = od.getOrderPrice() - (dd * fee);
+			expectedProfit = expectedProfit - dd * fee;
 
-			if(expectedProfit<acceptableProfitMargin || (dueDate<4&&(4-dueDate*fee)>od.getOrderPrice()))
+			if(expectedProfit<acceptableProfitMargin || (dueDate<4&&(4-dueDate*fee)>expectedProfit))
 				accepted = false;
 
-			System.out.println("Expected Profit = " + expectedProfit);						
-			od.setOrderPrice(expectedProfit);
+			System.out.println("Expected Profit = " + expectedProfit);
 			System.out.println(accepted);			
 			return accepted;
 		}
@@ -326,22 +357,22 @@ public class ManufacturerAgent extends Agent{
 					ce = getContentManager().extractContent(msg);
 					if(ce instanceof Action) {
 						Concept action = ((Action)ce).getAction();
-						if (action instanceof PlaceOrder) {
-							PlaceOrder order = (PlaceOrder)action;
+						if (action instanceof Order) {
+							Order order = (Order)action;
 							Item it = order.getItem();
 							if(it instanceof OrderDetails){
 								od = (OrderDetails)it;	
 								System.out.println("order read");
-								ACLMessage orderMsg = new ACLMessage(ACLMessage.INFORM);
+								ACLMessage orderMsg;
 								if(strategy())
 								{
-									orderMsg.setContent("accept");
+									orderMsg = new ACLMessage(ACLMessage.AGREE);
 									//orderCatalogue.put(od, value)
 									orderSupplies();
 								}
 								else
 								{
-									orderMsg.setContent("reject");
+									orderMsg = new ACLMessage(ACLMessage.REFUSE);
 
 								}
 								orderMsg.addReceiver(msg.getSender());
@@ -369,7 +400,7 @@ public class ManufacturerAgent extends Agent{
 
 		@Override
 		public boolean done() {
-			if(ordersReceived == 3)
+			if(ordersReceived >= noOfCustomers)
 				return true;
 			else	
 				return false;
