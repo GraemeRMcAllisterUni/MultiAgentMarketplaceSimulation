@@ -21,7 +21,6 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import ontology.MarketplaceOntology;
 import ontology.elements.*;
-er;
 
 import java.util.List;
 import java.util.Map;
@@ -35,10 +34,6 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 
 public class Postman extends Agent  {
 
-	
-//	HashMap<String, Double> stock1 = new HashMap<String, Double>();
-//	HashMap<String, Double> stock2 = new HashMap<String, Double>();
-
 	private List<AID> supplierAgents = new ArrayList<>();
 	private AID manufacturerAID;
 	private AID tickerAgent;
@@ -46,9 +41,12 @@ public class Postman extends Agent  {
 	private Ontology ontology = MarketplaceOntology.getInstance();
 	int noOfCustomers = 3;
 	private HashMap<Component, Double> transit = new HashMap<Component, Double>();
+	private int orderNumber = 1;
 
 	protected void setup() {
 		//add this agent to the yellow pages
+		getContentManager().registerLanguage(codec);
+		getContentManager().registerOntology(ontology);
 		DFAgentDescription dfd = new DFAgentDescription();
 		dfd.setName(getAID());
 		ServiceDescription sd = new ServiceDescription();
@@ -75,7 +73,6 @@ public class Postman extends Agent  {
 			agentDesc.addServices(serviceDesc);
 			try{
 				DFAgentDescription[] agentsFound  = DFService.search(this, agentDesc); 
-
 				for(DFAgentDescription aF : agentsFound)
 					supplierAgents.add(aF.getName()); // this is the AID
 			}
@@ -93,27 +90,20 @@ public class Postman extends Agent  {
 	
 	private class Deliver extends OneShotBehaviour{ // sends mail to manufacturer after set days in "transit"
 		
-		public Deliver(Agent a) {
-			super(a);
-		}
-		
-		public Deliver() {
-			super();
-		}
-
-
 		@Override
 		public void action() {
 
 			List<Component> compSent = new ArrayList<>();
-			for(Map.Entry<Component, Double> entry : transit.entrySet())
-			{
-				if(entry.getValue()==1)
-				{
-					compSent.add(entry.getKey());
-					transit.remove(entry.getKey());
-				}
-			}
+			System.out.println("Out for Delivery: " + transit);
+			transit.forEach((k, v) -> {	
+					if(v == (double) 1) 
+					{
+						compSent.add(k);
+						//transit.remove(k);
+					}			
+			});
+					
+			
 
 			if(!compSent.isEmpty())				
 			{
@@ -121,7 +111,9 @@ public class Postman extends Agent  {
 				msg.addReceiver(manufacturerAID); // sellerAID is the AID of the Seller agent
 				msg.setLanguage(codec.getName());
 				msg.setOntology(ontology.getName()); 
+				System.out.println("Arriving today: " + compSent);
 				compSent.forEach((comp) ->{
+					comp.setId(0);
 					
 					Order order = new Order();			
 					order.setCustomer(myAgent.getAID());
@@ -135,7 +127,6 @@ public class Postman extends Agent  {
 						// Let JADE convert from Java objects to string
 						getContentManager().fillContent(msg, deliver); //send the wrapper object
 						send(msg);
-
 					}
 					catch (CodecException ce) {
 						ce.printStackTrace();
@@ -144,10 +135,12 @@ public class Postman extends Agent  {
 						oe.printStackTrace();
 					} 
 
-				});			
+				});
+				System.out.println("Delivered: " + compSent);
+				compSent.forEach(c -> transit.remove(c));
 				compSent.clear();
 			}
-			transit.forEach((k, v) ->transit.replace(k, v, v-1));
+			transit.forEach((k, v) -> transit.replace(k, v, v-1));
 			
 		}
 
@@ -174,16 +167,17 @@ public class Postman extends Agent  {
 							Item it = order.getItem();
 							if(it instanceof Component){
 								Component c = (Component)it;
-								if(msg.getSender().getName().contains("1"))
+								c.setId(orderNumber);
+								if(msg.getSender().getName().contains("Supplier 1"))
 								{
 									transit.put(c, (double)1);
-									System.out.println(transit);
 								}
 								else
 								{
-									transit.put(c, (double)4);
-									System.out.println(transit);
-								}						
+									transit.put(c, (double)4);									
+								}
+								System.out.println(transit);
+								orderNumber++;
 							}
 						}
 					}

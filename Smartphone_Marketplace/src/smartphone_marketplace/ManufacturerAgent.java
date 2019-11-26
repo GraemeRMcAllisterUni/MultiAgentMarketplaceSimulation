@@ -30,7 +30,7 @@ import ontology.elements.*;
 
 public class ManufacturerAgent extends Agent{
 
-
+	double acceptableProfitMargin = 1000;
 	private AID supplier1AID;
 	private AID supplier2AID;
 	private List <AID> supplierAgents = new ArrayList<>();
@@ -40,15 +40,15 @@ public class ManufacturerAgent extends Agent{
 	private Ontology ontology = MarketplaceOntology.getInstance();
 	int noOfCustomers = 3;
 	int w = 5;
-	private static HashMap<Component, Double> Warehouse = new HashMap<>();
 
 	double Budget = 0;
 	double Profit = 0;
 
-
+	private static HashMap<Component, Double> warehouse = new HashMap<>();
 	private static HashMap<Component, Double> stock1 = new HashMap<>();
 	private static HashMap<Component, Double> stock2 = new HashMap<>();
 	private static HashMap<OrderDetails, Double> orderCatalogue = new HashMap<>();
+	private static HashMap<OrderDetails, Double> dailyOrders = new HashMap<>();
 
 	public void setup() {
 
@@ -68,7 +68,6 @@ public class ManufacturerAgent extends Agent{
 			e.printStackTrace();
 
 		}
-
 
 		stock1.put(new Component("Screen","5"), (double) 100);
 		stock1.put(new Component("Screen","7"), (double) 150);		
@@ -112,14 +111,16 @@ public class ManufacturerAgent extends Agent{
 					FindSuppliers fs = new FindSuppliers();
 					OrderRequest or = new OrderRequest();
 					ReceiveSupplies rs = new ReceiveSupplies();
+					AssemblePhones as = new AssemblePhones();
+					PayFees pf = new PayFees();
 					dailyActivity.addSubBehaviour(fs);
 					dailyActivity.addSubBehaviour(or);
 					dailyActivity.addSubBehaviour(rs);					
 					cyclicBehaviours.add(or);
 					cyclicBehaviours.add(fs);
 
-					myAgent.addBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
 					myAgent.addBehaviour(dailyActivity);
+					myAgent.addBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
 
 				}
 				else {
@@ -133,9 +134,31 @@ public class ManufacturerAgent extends Agent{
 		}
 
 	}
+	
+	public class AssemblePhones extends OneShotBehaviour{
+
+		@Override
+		public void action() {
+			
+			//OrderCatalogue
+			
+			
+		}
+		
+	}	
+	
+	public class PayFees extends OneShotBehaviour{
+
+		@Override
+		public void action() {
+			warehouse.forEach((k, v) -> warehouse.replace(k, v, v-1));
+			
+		}
+		
+	}
+	
 
 	public class FindSuppliers extends OneShotBehaviour {
-
 
 		public 	void action() {
 			supplier1AID = new AID("Supplier 1",AID.ISLOCALNAME);
@@ -162,39 +185,39 @@ public class ManufacturerAgent extends Agent{
 			if(msg != null)
 			{
 				customersDone++;
+				if(customersDone == noOfCustomers)
+				{
+					ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+					supplierAgents.forEach(sa -> tick.addReceiver(sa));
+					tick.setContent("done"); 
+					myAgent.send(tick); // telling suppliers no more orders for components
+				}
+				else if(customersDone >= noOfCustomers + 1)
+				{
+					System.out.println("");
+					ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+					//we are finished				
+					tick.addReceiver(tickerAgent);
+					tick.setContent("done");
+					myAgent.send(tick);
+					//remove behaviours
+					for(Behaviour b : toRemove) {
+						myAgent.removeBehaviour(b);
+					}
+					myAgent.removeBehaviour(this);
+					System.out.println("manufacturer done");
+				}
+
 			}
 			else
 			{
 				block();
 			}
-			if(customersDone == noOfCustomers)
-			{
-				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-				supplierAgents.forEach(sa -> tick.addReceiver(sa));
-				tick.setContent("done"); 
-				myAgent.send(tick); // telling suppliers no more orders for components
-			}
-			else if(customersDone > noOfCustomers)
-			{
-				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-				//we are finished				
-				tick.addReceiver(tickerAgent);
-				tick.setContent("done");
-				myAgent.send(tick);
-				//remove behaviours
-				for(Behaviour b : toRemove) {
-					myAgent.removeBehaviour(b);
-				}
-				myAgent.removeBehaviour(this);
-				//myAgent.removeBehaviour(this);
-				System.out.println("manufacturer done");
-			}
-
 		}
 
 		@Override
 		public boolean done() {
-			return customersDone >= noOfCustomers;
+			return customersDone >= noOfCustomers + 1;
 		}
 	}
 
@@ -219,15 +242,15 @@ public class ManufacturerAgent extends Agent{
 								c = (Component)it;
 
 								double stock = c.getQuantity();
-								if(Warehouse.containsKey(c))
+								if(warehouse.containsKey(c))
 								{								
-									stock =+ Warehouse.get(c);
-									Warehouse.replace(c, Warehouse.get(c), stock);
+									stock =+ warehouse.get(c);
+									warehouse.replace(c, warehouse.get(c), stock);
 								}
 								else
-									Warehouse.put(c, stock);
+									warehouse.put(c, stock);
 
-								System.out.println(Warehouse);
+								System.out.println("Manufacturer Warehouse:" + warehouse);
 
 
 							}
@@ -249,7 +272,6 @@ public class ManufacturerAgent extends Agent{
 
 	private class OrderRequest extends Behaviour{
 
-		double acceptableProfitMargin = 1000;
 		Boolean preferLower;
 		int ordersReceived = 0;
 
@@ -342,6 +364,7 @@ public class ManufacturerAgent extends Agent{
 
 			System.out.println("Expected Profit = " + expectedProfit);
 			System.out.println(accepted);			
+			dailyOrders.put(od, expectedProfit);
 			return accepted;
 		}
 
@@ -360,25 +383,43 @@ public class ManufacturerAgent extends Agent{
 						if (action instanceof Order) {
 							Order order = (Order)action;
 							Item it = order.getItem();
-							if(it instanceof OrderDetails){
-								od = (OrderDetails)it;	
-								System.out.println("order read");
-								ACLMessage orderMsg;
-								if(strategy())
-								{
-									orderMsg = new ACLMessage(ACLMessage.AGREE);
-									//orderCatalogue.put(od, value)
-									orderSupplies();
+							if(msg.getSender().getName().contains("Customer"))
+							{
+								if(it instanceof OrderDetails){
+									od = (OrderDetails)it;	
+									System.out.println("order read");
+									ACLMessage orderMsg;
+									if(strategy())
+									{
+										orderMsg = new ACLMessage(ACLMessage.AGREE);
+										orderSupplies();
+									}
+									else
+									{
+										orderMsg = new ACLMessage(ACLMessage.REFUSE);
+									}
+									orderMsg.addReceiver(msg.getSender());
+									System.out.println(msg.getSender());
+									myAgent.send(orderMsg);
+									ordersReceived++;
 								}
-								else
-								{
-									orderMsg = new ACLMessage(ACLMessage.REFUSE);
+							}
+							else if(msg.getSender().getName().contains("Postman"))
+							{
+								if(it instanceof Component){
+									Component c = new Component();
+									c = (Component)it;
+									double stock = c.getQuantity();
+									if(warehouse.containsKey(c))
+									{								
+										stock =  stock + warehouse.get(c);
+										warehouse.replace(c, warehouse.get(c), stock);
+									}
+									else
+										warehouse.put(c, stock);
 
+									System.out.println("Manufacturer Warehouse:" + warehouse);
 								}
-								orderMsg.addReceiver(msg.getSender());
-								System.out.println(msg.getSender());
-								myAgent.send(orderMsg);
-								ordersReceived++;
 							}
 						}
 					}

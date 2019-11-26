@@ -6,6 +6,7 @@ import jade.content.onto.annotations.Slot;
 
 public class Item implements Concept {
 	
+	public int id;
 	private double Quantity = 1;
 	private double Price = 0;
 
@@ -19,6 +20,14 @@ public class Item implements Concept {
 
 	public void setPrice(double price) {
 		Price = price;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
 	}
 
 	public void setQuantity(double quantity) {

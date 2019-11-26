@@ -4,15 +4,17 @@ import java.util.Objects;
 
 public class Component extends Item {
 	private String type;	
-	private String spec;	
+	private String spec;
 	
 
 	public Component(){
 		super();
+		setId(0);
 	}
 	
 	public Component(String type, String spec) {
-		//super();
+		super();
+		setId(0);
 		this.type = type;
 		this.spec = spec;
 	}
@@ -35,8 +37,12 @@ public class Component extends Item {
 		return spec;
 	}
 	
-	public String toString() {				
+	@Override
+	public String toString() {	
+		if(id==0)
 		return getType() + " " + getSpec();		
+		else
+			return getId() + " " +getType() + " " + getSpec();	
 	}
 	
     @Override
@@ -48,9 +54,10 @@ public class Component extends Item {
             return false;
         }
         Component c = (Component)o;
-        boolean same = (type.equals(c.getType())  && spec.equals(c.getSpec()));
+        boolean same =  (id == c.getId() && type.equals(c.getType()) && spec.equals(c.getSpec()));
         return same;
     }
+
 
 	@Override
 	public int hashCode() {

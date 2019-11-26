@@ -94,6 +94,7 @@ public class CustomerAgent extends Agent  {
 					tickerAgent = msg.getSender();
 				}
 				if(msg.getContent().equals("new day")) {
+					doWait(1000);
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
 					dailyActivity.addSubBehaviour(new RequestOrder());
 					dailyActivity.addSubBehaviour(new OrderResponse());
