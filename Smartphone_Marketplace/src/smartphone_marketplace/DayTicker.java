@@ -79,7 +79,7 @@ public class DayTicker extends Agent {
 					serviceDesc.setType(a);
 					agentDesc.addServices(serviceDesc);
 					try{
-						DFAgentDescription[] agentsFound  = DFService.search(myAgent,agentDesc); 
+						DFAgentDescription[] agentsFound  = DFService.search(myAgent, agentDesc); 
 						
 						for(DFAgentDescription aF : agentsFound) {
 							marketplaceAgents.add(aF.getName()); // this is the AID						

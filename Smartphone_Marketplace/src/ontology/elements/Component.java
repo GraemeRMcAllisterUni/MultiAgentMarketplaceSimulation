@@ -39,7 +39,7 @@ public class Component extends Item {
 	
 	@Override
 	public String toString() {	
-		if(id==0)
+		if(id == 0)
 		return getType() + " " + getSpec();		
 		else
 			return getId() + " " +getType() + " " + getSpec();	

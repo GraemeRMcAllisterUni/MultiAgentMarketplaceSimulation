@@ -17,14 +17,6 @@ public class OrderDetails extends Item {
 	
 	private List<Component> components;
 
-//	public double getOrderPrice() {
-//		return OrderPrice;
-//	}
-//
-//	public void setOrderPrice(double orderPrice) {
-//		OrderPrice = orderPrice;
-//	}
-
 	public OrderDetails() {
 		super();
 	}

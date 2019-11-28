@@ -40,6 +40,8 @@ public class ManufacturerAgent extends Agent{
 	private Ontology ontology = MarketplaceOntology.getInstance();
 	int noOfCustomers = 3;
 	int w = 5;
+	private List<OrderManifest> orderCatalogue= new ArrayList<>();
+	private List<OrderManifest> dailyOrders= new ArrayList<>();
 
 	double Budget = 0;
 	double Profit = 0;
@@ -47,8 +49,7 @@ public class ManufacturerAgent extends Agent{
 	private static HashMap<Component, Double> warehouse = new HashMap<>();
 	private static HashMap<Component, Double> stock1 = new HashMap<>();
 	private static HashMap<Component, Double> stock2 = new HashMap<>();
-	private static HashMap<OrderDetails, Double> orderCatalogue = new HashMap<>();
-	private static HashMap<OrderDetails, Double> dailyOrders = new HashMap<>();
+
 
 	public void setup() {
 
@@ -108,16 +109,16 @@ public class ManufacturerAgent extends Agent{
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
 
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					FindSuppliers fs = new FindSuppliers();
 					OrderRequest or = new OrderRequest();
+					AcceptOrders ao = new AcceptOrders();
+					OrderSupplies os = new OrderSupplies();
 					ReceiveSupplies rs = new ReceiveSupplies();
 					AssemblePhones as = new AssemblePhones();
 					PayFees pf = new PayFees();
-					dailyActivity.addSubBehaviour(fs);
 					dailyActivity.addSubBehaviour(or);
 					dailyActivity.addSubBehaviour(rs);					
 					cyclicBehaviours.add(or);
-					cyclicBehaviours.add(fs);
+
 
 					myAgent.addBehaviour(dailyActivity);
 					myAgent.addBehaviour(new EndDayListener(myAgent,cyclicBehaviours));
@@ -134,39 +135,46 @@ public class ManufacturerAgent extends Agent{
 		}
 
 	}
-	
+
+	public class AcceptOrders extends OneShotBehaviour{
+
+		double bestProfit = 0;
+		@Override
+		public void action() {
+			for(OrderManifest om : dailyOrders){
+				if(om.getExpectedProfit()>bestProfit)
+					bestProfit = om.getExpectedProfit();
+			}
+			double runningProfit;
+			for(OrderManifest om : dailyOrders){
+				if(om.getExpectedProfit()==bestProfit)
+					if(om.getExpectedProfit()<dailyOrders.forEach((order) -> ))
+					bestProfit = om.getExpectedProfit();
+			}
+
+		}
+
+	}
+
 	public class AssemblePhones extends OneShotBehaviour{
 
 		@Override
 		public void action() {
-			
-			//OrderCatalogue
-			
-			
+
 		}
-		
+
 	}	
-	
+
 	public class PayFees extends OneShotBehaviour{
 
 		@Override
 		public void action() {
 			warehouse.forEach((k, v) -> warehouse.replace(k, v, v-1));
-			
-		}
-		
-	}
-	
 
-	public class FindSuppliers extends OneShotBehaviour {
-
-		public 	void action() {
-			supplier1AID = new AID("Supplier 1",AID.ISLOCALNAME);
-			supplier2AID = new AID("Supplier 2",AID.ISLOCALNAME);	
-			supplierAgents.add(supplier1AID);
-			supplierAgents.add(supplier2AID);
 		}
+
 	}
+
 
 	public class EndDayListener extends Behaviour {
 		private int customersDone;
@@ -269,65 +277,79 @@ public class ManufacturerAgent extends Agent{
 		}
 	}
 
+	private class OrderSupplies extends OneShotBehaviour{
 
-	private class OrderRequest extends Behaviour{
-
-		Boolean preferLower;
-		int ordersReceived = 0;
-
-		OrderDetails od = new OrderDetails();
-
-		void orderSupplies() {
+		@Override
+		public void action() {
 			ACLMessage messege = new ACLMessage(ACLMessage.REQUEST); // sellerAID is the AID of the Seller agent
 			messege.setLanguage(codec.getName());
 			messege.setOntology(ontology.getName()); 
-			for(Component c : od.getComponents())
+			for(OrderManifest om : dailyOrders)
 			{
-				ACLMessage msg = (ACLMessage)messege.clone();
-				Order order = new Order();			
-				order.setCustomer(myAgent.getAID());
-				c.setQuantity(od.getQuantity());
-				order.setItem(c);
-				Action requestOrder = new Action();
-				requestOrder.setAction(order);
+				for(Component c : od.getComponents())
+				{
+					Boolean preferLower = (dueDate>4);
+					ACLMessage msg = (ACLMessage)messege.clone();
+					Order order = new Order();			
+					order.setCustomer(myAgent.getAID());
+					c.setQuantity(od.getQuantity());
+					order.setItem(c);
+					Action requestOrder = new Action();
+					requestOrder.setAction(order);
 
 
-				if(preferLower && stock2.containsKey(c))
-				{
-					msg.addReceiver(supplier2AID);
-					requestOrder.setActor(supplier2AID);
-					c.setPrice(stock2.get(c));
+					if(preferLower && stock2.containsKey(c))
+					{
+						msg.addReceiver(supplier2AID);
+						requestOrder.setActor(supplier2AID);
+						c.setPrice(stock2.get(c));
+
+					}
+					else				
+					{
+						requestOrder.setActor(supplier1AID);
+						msg.addReceiver(supplier1AID);
+						c.setPrice(stock1.get(c));
+					}
+					try {
+						// Let JADE convert from Java objects to string
+						getContentManager().fillContent(msg, requestOrder); //send the wrapper object
+						send(msg);
+						System.out.println("ordered " + c.getQuantity() +" "+ c + "(s) from " + requestOrder.getActor().getLocalName() + " for £" + c.getPrice() + " per component");
+						Profit = Profit - c.getPrice();
+					}
+					catch (CodecException ce) {
+						ce.printStackTrace();
+					}
+					catch (OntologyException oe) {
+						oe.printStackTrace();
+					} 
 				}
-				else				
-				{
-					requestOrder.setActor(supplier1AID);
-					msg.addReceiver(supplier1AID);
-					c.setPrice(stock1.get(c));
-				}
-				try {
-					// Let JADE convert from Java objects to string
-					getContentManager().fillContent(msg, requestOrder); //send the wrapper object
-					send(msg);
-					System.out.println("ordered " + c.getQuantity() +" "+ c + "(s) from " + requestOrder.getActor().getLocalName() + " for £" + c.getPrice() + " per component");
-					Profit = Profit - c.getPrice();
-				}
-				catch (CodecException ce) {
-					ce.printStackTrace();
-				}
-				catch (OntologyException oe) {
-					oe.printStackTrace();
-				} 
 			}
 		}
 
-		Boolean strategy() {
+
+
+
+	}
+
+
+	private class OrderRequest extends Behaviour{
+
+
+		int ordersReceived = 0;
+		AID customer;
+
+		OrderDetails od = new OrderDetails();			
+
+		double expectedProfit() {
 
 			Boolean accepted = true;															
 			double price = od.getPrice();
 			double fee = od.getFee();
 			double quantity = od.getQuantity();
 			double dueDate = od.getDueDate();
-			preferLower = (dueDate>4);
+			Boolean preferLower = (dueDate>4);
 			double componentsPrice = 0;
 			double cP = 0;
 			double expectedProfit = 0;
@@ -341,31 +363,25 @@ public class ManufacturerAgent extends Agent{
 				componentsPrice += cP;				
 			}
 
-			double dd = dueDate;
-			if(dd>4) {
-				dd = 0;
-			}
-			else if(dd<4)
-			{
-				dd = 4 - dd;
-			}
-
+			double feecounter = dueDate;
+			if(feecounter>=4) 
+				feecounter = 0;
+			else if(feecounter<4)
+				feecounter = 4 - feecounter;
 
 			expectedProfit = price * quantity - componentsPrice;
 
 			System.out.println(od.toString());
 			System.out.println(expectedProfit + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
-			System.out.println("expected = totalPrice:"+ expectedProfit +" - " + "dd:" +dd + " * fee:" + fee);
+			System.out.println("expected = totalPrice:"+ expectedProfit +" - " + "dd:" + feecounter + " * fee:" + fee);
 
-			expectedProfit = expectedProfit - dd * fee;
+			expectedProfit = expectedProfit - feecounter * fee;
 
-			if(expectedProfit<acceptableProfitMargin || (dueDate<4&&(4-dueDate*fee)>expectedProfit))
-				accepted = false;
+
 
 			System.out.println("Expected Profit = " + expectedProfit);
-			System.out.println(accepted);			
-			dailyOrders.put(od, expectedProfit);
-			return accepted;
+			System.out.println(accepted);
+			return expectedProfit;
 		}
 
 		@Override
@@ -389,10 +405,13 @@ public class ManufacturerAgent extends Agent{
 									od = (OrderDetails)it;	
 									System.out.println("order read");
 									ACLMessage orderMsg;
-									if(strategy())
+									if(expectedProfit()>=acceptableProfitMargin)
 									{
+										
+										customer = msg.getSender();
 										orderMsg = new ACLMessage(ACLMessage.AGREE);
-										orderSupplies();
+										OrderManifest om = new OrderManifest(od, customer,expectedProfit());
+										dailyOrders.add(om);
 									}
 									else
 									{
@@ -439,12 +458,22 @@ public class ManufacturerAgent extends Agent{
 			super.reset();
 		}
 
+
+
 		@Override
 		public boolean done() {
 			if(ordersReceived >= noOfCustomers)
+			{
+				completeOrder();
 				return true;
+			}
 			else	
 				return false;
+		}
+
+		void completeOrder() {
+
+
 		}
 
 		public int onEnd(){		
