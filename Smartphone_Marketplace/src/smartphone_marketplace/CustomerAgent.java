@@ -54,6 +54,7 @@ public class CustomerAgent extends Agent  {
 
 	public class OrderResponse extends OneShotBehaviour {
 
+
 		@Override
 		public void action() {
 			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchPerformative(ACLMessage.AGREE),
@@ -144,18 +145,18 @@ public class CustomerAgent extends Agent  {
 		@Override
 		public void action() {
 			// Prepare the action request message
-			Device device = new Device();
+			PC pC = new PC();
 			List<Component> c = new ArrayList<Component>();
 			{
 				if(Math.random() < 0.5) {
-					device.setName("Phone");
+					pC.setName("Phone");
 					c.add(new Component("Screen","5"));
 					c.add(new Component("Battery","2000"));
 					//Screen = 5"
 					//Battery - 2000mAh
 				}
 				else {
-					device.setName("Phablet");
+					pC.setName("Phablet");
 					c.add(new Component("Screen","7"));
 					c.add(new Component("Battery","3000"));
 					//Screen = 7"
@@ -186,7 +187,7 @@ public class CustomerAgent extends Agent  {
 			double dueDate = Math.floor(1 + 10 * Math.random());
 			double fee = quantity * Math.floor(1 + 50 * Math.random());
 
-			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee, dueDate, c);
+			OrderDetails orderDetails = new OrderDetails(pC, quantity, price, fee, dueDate, c);
 			
 			ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
 			msg.addReceiver(manufacturerAID); // sellerAID is the AID of the Seller agent

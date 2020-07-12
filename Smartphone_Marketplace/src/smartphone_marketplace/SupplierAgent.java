@@ -51,7 +51,7 @@ public class SupplierAgent extends Agent {
 
 		postman = new AID("Postman",AID.ISLOCALNAME);
 
-		///Component c = new Componenet();	
+		///Component c = new Component();	
 
 		HashMap<Component, Double> stock = new HashMap<Component, Double>();
 

@@ -9,13 +9,13 @@ import java.util.List;
 import jade.content.onto.annotations.AggregateSlot;
 import jade.content.onto.annotations.Slot;
 
-public class Device extends Item {
+public class PC extends Item {
 		
 	private String deviceType;
 	
 	private List<Component> components;// = new ArrayList<Component>();
 
-	public Device(){
+	public PC(){
 		super();
 	}
 	

@@ -12,7 +12,7 @@ public class OrderDetails extends Item {
 	private double Fee;
 	private double DueDate;
 	private boolean Fulfilled;
-	private Device device;
+	private PC pC;
 	//private double OrderPrice;
 	
 	private List<Component> components;
@@ -51,18 +51,18 @@ public class OrderDetails extends Item {
 
 	}
 
-	public void setDevice(Device d) {
-		this.device = d;
+	public void setDevice(PC d) {
+		this.pC = d;
 	}
 
-	public Device getDevice() {
-		return device;
+	public PC getDevice() {
+		return pC;
 	}
 
-	public OrderDetails(Device d, double quantity, double price, double fee, double dueDate, List<Component> c) {
+	public OrderDetails(PC d, double quantity, double price, double fee, double dueDate, List<Component> c) {
 		Price = price;
 		Fee = fee;
-		device = d;
+		pC = d;
 		setQuantity(quantity);
 		DueDate = dueDate;
 		components = c;
@@ -85,7 +85,7 @@ public class OrderDetails extends Item {
 	@Override
 	public String toString() {
 		return "OrderDetails [Price=" + Price + ", Fee=" + Fee + ", DueDate=" + DueDate + ", Fulfilled=" + Fulfilled
-				+ ", device=" + device +"]"; //", OrderPrice=" + OrderPrice + 
+				+ ", device=" + pC +"]"; //", OrderPrice=" + OrderPrice + 
 	}
 
 }

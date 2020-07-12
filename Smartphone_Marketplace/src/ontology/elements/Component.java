@@ -64,8 +64,6 @@ public class Component extends Item {
 		return 17;
 	}
     
-    
-    
-    
+     
 		
 }
