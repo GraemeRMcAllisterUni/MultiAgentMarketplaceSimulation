@@ -19,7 +19,7 @@ import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import ontology.MarketplaceOntology;
+import ontology.PCOntology;
 import ontology.elements.*;
 
 import java.util.List;
@@ -38,9 +38,9 @@ public class Postman extends Agent  {
 	private AID manufacturerAID;
 	private AID tickerAgent;
 	private Codec codec = new SLCodec();
-	private Ontology ontology = MarketplaceOntology.getInstance();
+	private Ontology ontology = PCOntology.getInstance();
 	int noOfCustomers = 3;
-	private HashMap<Component, Double> transit = new HashMap<Component, Double>();
+	private HashMap<Order, Double> transit = new HashMap<Order, Double>();
 	private int orderNumber = 1;
 
 	protected void setup() {
@@ -93,18 +93,15 @@ public class Postman extends Agent  {
 		@Override
 		public void action() {
 
-			List<Component> compSent = new ArrayList<>();
+			List<Order> compSent = new ArrayList<>();
 			System.out.println("Out for Delivery: " + transit);
-			transit.forEach((k, v) -> {	
+			transit.forEach((c, v) -> {	
 					if(v == (double) 1) 
 					{
-						compSent.add(k);
+						compSent.add(c);
 						//transit.remove(k);
 					}			
-			});
-					
-			
-
+			});			
 			if(!compSent.isEmpty())				
 			{
 				ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
@@ -113,14 +110,13 @@ public class Postman extends Agent  {
 				msg.setOntology(ontology.getName()); 
 				System.out.println("Arriving today: " + compSent);
 				compSent.forEach((comp) ->{
-					comp.setId(0);
-					
-					Order order = new Order();			
-					order.setCustomer(myAgent.getAID());
-					order.setItem(comp);
+					Component c = (Component)comp.getItem();
+					c.setId(0);
+					comp.setItem(c);
 
 					Action deliver = new Action();
-					deliver.setAction(order);
+					//comp.setCustomer(myAgent.getAID());
+					deliver.setAction(comp);
 					deliver.setActor(manufacturerAID);
 
 					try {
@@ -166,17 +162,18 @@ public class Postman extends Agent  {
 							Order order = (Order)action;
 							Item it = order.getItem();
 							if(it instanceof Component){
-								Component c = (Component)it;
+								Component c = (Component)it;							
 								c.setId(orderNumber);
+								//order.setItem(c);
 								if(msg.getSender().getName().contains("Supplier 1"))
 								{
-									transit.put(c, (double)1);
+									transit.put(order, (double)1);
 								}
 								else
 								{
-									transit.put(c, (double)4);									
+									transit.put(order, (double)4);									
 								}
-								System.out.println(transit);
+								//System.out.println(transit);
 								orderNumber++;
 							}
 						}
@@ -212,18 +209,13 @@ public class Postman extends Agent  {
 				}
 				if(msg.getContent().equals("new day")) {
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();	
-					
-					Deliver d = new Deliver();	
-					
-					CyclicBehaviour po = new PostalOrder();		
-					
+					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();						
+					Deliver d = new Deliver();						
+					CyclicBehaviour po = new PostalOrder();							
 					cyclicBehaviours.add(po);										
 					dailyActivity.addSubBehaviour(d);
-					dailyActivity.addSubBehaviour(po);
-					
-					myAgent.addBehaviour(dailyActivity);
-					
+					dailyActivity.addSubBehaviour(po);					
+					myAgent.addBehaviour(dailyActivity);					
 					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
 				}
 				else {
@@ -252,12 +244,12 @@ public class Postman extends Agent  {
 
 			MessageTemplate mt = MessageTemplate.MatchContent("done");
 			ACLMessage msg = myAgent.receive(mt);
-			if(msg!=null)
-			{
+			if(msg!=null) {	
+				
 				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
 				tick.setContent("done");
-				tick.addReceiver(tickerAgent);
 				tick.addReceiver(manufacturerAID);
+				tick.addReceiver(tickerAgent);
 				myAgent.send(tick);
 				//remove behaviours
 				for(Behaviour b : toRemove) {

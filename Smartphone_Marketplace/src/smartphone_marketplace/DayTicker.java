@@ -68,7 +68,7 @@ public class DayTicker extends Agent {
 		public void action() {
 			switch(step) {
 			case 0:
-				System.out.println("Setting up day " + day);
+				System.out.println("\n\nSetting up day " + day +"\n");
 				//doWait(9000);
 				//find all agents using directory service
 				List<String> agents =  Arrays.asList("customer", "manufacturer", "supplier", "postman");
@@ -136,7 +136,6 @@ public class DayTicker extends Agent {
 		
 		@Override
 		public int onEnd() {
-			System.out.println("End of day " + day);
 			if(day == NUM_DAYS) {
 				//send termination message to each agent
 				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);

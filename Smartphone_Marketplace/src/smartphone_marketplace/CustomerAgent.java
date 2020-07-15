@@ -19,10 +19,13 @@ import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import ontology.MarketplaceOntology;
+
+import ontology.PCOntology;
 import ontology.elements.*;
 
 import java.util.List;
+
+import Manufacturer.CPUManufacturer;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -34,7 +37,7 @@ public class CustomerAgent extends Agent  {
 	private AID manufacturerAID;
 	private AID tickerAgent;
 	private Codec codec = new SLCodec();
-	private Ontology ontology = MarketplaceOntology.getInstance();
+	private Ontology ontology = PCOntology.getInstance();
 	//stock list, with serial number as the key
 
 	protected void setup(){
@@ -96,6 +99,7 @@ public class CustomerAgent extends Agent  {
 				if(msg.getContent().equals("new day")) {
 					doWait(1000);
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
+					dailyActivity.addSubBehaviour(new CheckDeliveries());
 					dailyActivity.addSubBehaviour(new RequestOrder());
 					dailyActivity.addSubBehaviour(new OrderResponse());
 					dailyActivity.addSubBehaviour(new EndDay(myAgent));
@@ -137,65 +141,85 @@ public class CustomerAgent extends Agent  {
 
 	}
 
+	private class CheckDeliveries extends OneShotBehaviour{
 
+		@Override
+		public void action() {
+
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+			ACLMessage msg = receive(mt);
+			if(msg != null){
+				try {
+					ContentElement ce = null;
+					ce = getContentManager().extractContent(msg);
+					if(ce instanceof Action) {
+						Concept action = ((Action)ce).getAction();
+						if (action instanceof Order) {
+							Order order = (Order)action;
+							Item it = order.getItem();
+						}
+					}
+				}
+				catch (CodecException ce) {
+					ce.printStackTrace();
+				}
+				catch (OntologyException oe) {
+					oe.printStackTrace();
+				}				
+
+			}
+		}
+			
+		
+	}
 
 	private class RequestOrder extends OneShotBehaviour{
 
 		@Override
 		public void action() {
 			// Prepare the action request message
-			Device device = new Device();
-			List<Component> c = new ArrayList<Component>();
-			{
+			PC pc = new PC();
 				if(Math.random() < 0.5) {
-					device.setName("Phone");
-					c.add(new Component("Screen","5"));
-					c.add(new Component("Battery","2000"));
-					//Screen = 5"
-					//Battery - 2000mAh
+					pc.setCpu(new CPU(CPUManufacturer.Mintel));
+					pc.setMotherboard(new Motherboard(CPUManufacturer.Mintel));
 				}
 				else {
-					device.setName("Phablet");
-					c.add(new Component("Screen","7"));
-					c.add(new Component("Battery","3000"));
-					//Screen = 7"
-					//Battery - 3000mAh
+					pc.setCpu(new CPU(CPUManufacturer.IMD));
+					pc.setMotherboard(new Motherboard(CPUManufacturer.IMD));
 				}
 
 				if(Math.random() < 0.5) {
-					c.add(new Component("RAM","4"));
+					pc.setMemory(new Memory(4));
 					//RAM = 4Gb
 				}
 				else {
-					c.add(new Component("RAM","8"));
+					pc.setMemory(new Memory(8));
 					//RAM = 8Gb
 				}
 
 				if(Math.random() < 0.5) {
-					c.add(new Component("Storage","64"));
+					pc.setHardDrive(new HardDrive(1024));
 					//Storage = 64Gb
 				}
 				else {
-					c.add(new Component("Storage","256"));
+					pc.setHardDrive(new HardDrive(2048));
 					//Storage = 256Gb
 				}
-			}
+			
 
 			double quantity = Math.floor(1 + 50 * Math.random());
 			double price = Math.floor(100 + 500 * Math.random());
 			double dueDate = Math.floor(1 + 10 * Math.random());
 			double fee = quantity * Math.floor(1 + 50 * Math.random());
-
-			OrderDetails orderDetails = new OrderDetails(device, quantity, price, fee, dueDate, c);
+			
+			Order order = new Order(pc, quantity, price, dueDate);
+			order.setCustomer(myAgent.getAID());
 			
 			ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
-			msg.addReceiver(manufacturerAID); // sellerAID is the AID of the Seller agent
+			msg.addReceiver(manufacturerAID);
 			msg.setLanguage(codec.getName());
 			msg.setOntology(ontology.getName()); 
-
-			Order order = new Order();			
-			order.setCustomer(myAgent.getAID());
-			order.setItem(orderDetails);
+		
 
 			Action requestOrder = new Action();
 			requestOrder.setAction(order);
@@ -205,7 +229,6 @@ public class CustomerAgent extends Agent  {
 				// Let JADE convert from Java objects to string
 				getContentManager().fillContent(msg, requestOrder); //send the wrapper object
 				send(msg);
-				System.out.println("order sent");
 			}
 			catch (CodecException ce) {
 				ce.printStackTrace();

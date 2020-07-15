@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import Manufacturer.CPUManufacturer;
 import jade.content.Concept;
 import jade.content.ContentElement;
 import jade.content.lang.Codec;
@@ -23,7 +24,7 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import ontology.MarketplaceOntology;
+import ontology.PCOntology;
 import ontology.elements.*;
 
 
@@ -32,7 +33,17 @@ public class SupplierAgent extends Agent {
 	private AID tickerAgent;
 	private AID postman;
 	private Codec codec = new SLCodec();
-	private Ontology ontology = MarketplaceOntology.getInstance();
+	private Ontology ontology = PCOntology.getInstance();
+	
+	
+	HashMap<Component, Double> stock = new HashMap<Component, Double>();
+	
+	
+	void setStock(HashMap stock) {
+		this.stock = stock;
+		
+	}
+
 
 	protected void setup(){
 
@@ -51,32 +62,31 @@ public class SupplierAgent extends Agent {
 
 		postman = new AID("Postman",AID.ISLOCALNAME);
 
-		///Component c = new Componenet();	
-
-		HashMap<Component, Double> stock = new HashMap<Component, Double>();
-
-
-		System.out.println(this.getName());
+		//HashMap<Component, Double> stock = new HashMap<Component, Double>();
 
 		if(this.getName().contains("Supplier 1"))
 		{
-			stock.put(new Component("Screen","5"),(double)100);
-			stock.put(new Component("Screen","7"),(double)150);		
-			stock.put(new Component("Storage","64"),(double)25);
-			stock.put(new Component("Storage","256"),(double)50);		
-			stock.put(new Component("RAM","4"),(double)30);
-			stock.put(new Component("RAM","8"),(double)60);
-			stock.put(new Component("Battery","2000"),(double)70);
-			stock.put(new Component("Battery","3000"),(double)100);
+			stock.put(new CPU(CPUManufacturer.Mintel),(double)200);
+			stock.put(new CPU(CPUManufacturer.IMD),(double)150);		
+			stock.put(new Motherboard(CPUManufacturer.Mintel),(double)125);
+			stock.put(new Motherboard(CPUManufacturer.IMD),(double)75);		
+			stock.put(new Memory(4),(double)50);
+			stock.put(new Memory(8),(double)90);
+			stock.put(new HardDrive(1024),(double)50);
+			stock.put(new HardDrive(2048),(double)75);
 			//System.out.println("Supplier 1 stock: " + stock);
 		}
 		else if (this.getName().contains("Supplier 2")) 
 		{
 
-			stock.put(new Component("Storage","64"),(double)15);
-			stock.put(new Component("Storage","256"),(double)40);		
-			stock.put(new Component("RAM","4"),(double)20);
-			stock.put(new Component("RAM","8"),(double)35);
+			stock.put(new CPU(CPUManufacturer.Mintel),(double)175);
+			stock.put(new CPU(CPUManufacturer.IMD),(double)130);		
+			stock.put(new Motherboard(CPUManufacturer.Mintel),(double)115);
+			stock.put(new Motherboard(CPUManufacturer.IMD),(double)60);		
+			stock.put(new Memory(4),(double)40);
+			stock.put(new Memory(8),(double)80);
+			stock.put(new HardDrive(1024),(double)45);
+			stock.put(new HardDrive(2048),(double)65);
 			//System.out.println("Supplier 2 stock: " + stock);
 		}
 		else
@@ -141,7 +151,7 @@ public class SupplierAgent extends Agent {
 						if (action instanceof Order) {						
 							
 							
-							ACLMessage postComponent = new ACLMessage(ACLMessage.REQUEST); // sellerAID is the AID of the Seller agent
+							ACLMessage postComponent = new ACLMessage(ACLMessage.REQUEST);
 							postComponent.addReceiver(postman);
 							postComponent.setLanguage(codec.getName());
 							postComponent.setOntology(ontology.getName()); 
