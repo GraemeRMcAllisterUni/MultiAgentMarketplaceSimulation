@@ -1,7 +1,6 @@
-package smartphone_marketplace;
+package pc_marketplace;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+
 
 import jade.content.Concept;
 import jade.content.ContentElement;
@@ -22,7 +21,8 @@ import jade.lang.acl.MessageTemplate;
 
 import ontology.PCOntology;
 import ontology.elements.*;
-
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import Manufacturer.CPUManufacturer;
@@ -32,8 +32,8 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 
 
-
-public class CustomerAgent extends Agent  {
+@SuppressWarnings("serial")
+public class CustomerAgent extends MarketPlaceAgent {
 	private AID manufacturerAID;
 	private AID tickerAgent;
 	private Codec codec = new SLCodec();
@@ -52,10 +52,17 @@ public class CustomerAgent extends Agent  {
 		try{DFService.register(this, dfd);}
 		catch(FIPAException e){e.printStackTrace();}
 		manufacturerAID = new AID("Manufacturer",AID.ISLOCALNAME);	
+		tickerAgent = new AID("Ticker",AID.ISLOCALNAME);
 		addBehaviour(new TickerWaiter(this));
 	}
 
-	public class OrderResponse extends OneShotBehaviour {
+	public class OrderResponse extends Behaviour {
+
+		private boolean finished = false;		
+		
+		public OrderResponse(Agent a) {
+			super(a);
+		}
 
 		@Override
 		public void action() {
@@ -71,6 +78,9 @@ public class CustomerAgent extends Agent  {
 				}
 				else
 					block();
+				
+				finished = true;
+				
 			}
 			else{
 				block();
@@ -78,6 +88,11 @@ public class CustomerAgent extends Agent  {
 
 		}
 
+		@Override
+		public boolean done() {
+			return finished;
+		}
+		
 	}
 
 	public class TickerWaiter extends CyclicBehaviour {
@@ -89,25 +104,37 @@ public class CustomerAgent extends Agent  {
 
 		@Override
 		public void action() {
-			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchContent("new day"),
-					MessageTemplate.MatchContent("terminate"));			
+			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchSender(tickerAgent),
+					MessageTemplate.MatchContent("terminate"));	
 			ACLMessage msg = myAgent.receive(mt); 
 			if(msg != null) {
-				if(tickerAgent == null) {
-					tickerAgent = msg.getSender();
-				}
+
 				if(msg.getContent().equals("new day")) {
+					System.out.println(myAgent.getLocalName() + " heard " + msg.getContent());
 					doWait(1000);
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					dailyActivity.addSubBehaviour(new CheckDeliveries());
-					dailyActivity.addSubBehaviour(new RequestOrder());
-					dailyActivity.addSubBehaviour(new OrderResponse());
-					dailyActivity.addSubBehaviour(new EndDay(myAgent));
+					
+					dailyActivity.addSubBehaviour(new RequestOrder(myAgent));
+					dailyActivity.addSubBehaviour(new OrderResponse(myAgent));
+					
+					List<AID> marketPlaceAgents = Arrays.asList(tickerAgent,manufacturerAID);
+					dailyActivity.addSubBehaviour(new EndDay(myAgent, marketPlaceAgents));
+					
 					myAgent.addBehaviour(dailyActivity);
-
+				}
+				else if(msg.getContent().equals("afternoon")){
+					System.out.println(myAgent.getLocalName() + " heard " + msg.getContent());
+					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
+					
+					CheckDeliveries cd = new CheckDeliveries(myAgent);
+					
+					cyclicBehaviours.add(cd);					
+					myAgent.addBehaviour(cd);
+					
+					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
+					
 				}
 				else {
-					//termination message to end simulation
 					myAgent.doDelete();
 				}
 			}
@@ -117,38 +144,48 @@ public class CustomerAgent extends Agent  {
 		}
 
 	}
+	
+	public class EndDayListener extends CyclicBehaviour {// listens to hear no more post orders
+		private List<Behaviour> toRemove;
 
-	public class EndDay extends OneShotBehaviour {
-
-		public EndDay(Agent a) {
+		public EndDayListener(Agent a, List<Behaviour> toRemove) {
 			super(a);
+			this.toRemove = toRemove;
 		}
 
 		@Override
 		public void action() {
-			//doWait(1000);
-			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-			msg.addReceiver(tickerAgent);
-			msg.setContent("done");
-			myAgent.send(msg);
 
-			//send a message to manufacturer that we have finished
-			ACLMessage custDone = new ACLMessage(ACLMessage.INFORM);
-			custDone.addReceiver(manufacturerAID);
-			custDone.setContent("done");
-			myAgent.send(custDone);
+			MessageTemplate mt = MessageTemplate.MatchContent("done");
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg!=null) {
+				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+				tick.setContent("done");
+				tick.addReceiver(tickerAgent);
+				myAgent.send(tick);
+				//remove behaviours
+				for(Behaviour b : toRemove) {
+					myAgent.removeBehaviour(b);
+				}
+				myAgent.removeBehaviour(this);
+			}
+			else {
+				block();
+			}
 		}
-
 	}
+	
+	private class CheckDeliveries extends CyclicBehaviour {
 
-	private class CheckDeliveries extends OneShotBehaviour{
+		public CheckDeliveries(Agent a) {
+			super(a);
+			}
 
 		@Override
 		public void action() {
-
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+			MessageTemplate mt = MessageTemplate.not(MessageTemplate.MatchContent("done"));
 			ACLMessage msg = receive(mt);
-			if(msg != null){
+			if(msg != null) {
 				try {
 					ContentElement ce = null;
 					ce = getContentManager().extractContent(msg);
@@ -157,6 +194,8 @@ public class CustomerAgent extends Agent  {
 						if (action instanceof Order) {
 							Order order = (Order)action;
 							Item it = order.getItem();
+							PC pc = (PC)it;
+							System.out.print("received my PC: "+ pc);
 						}
 					}
 				}
@@ -168,12 +207,17 @@ public class CustomerAgent extends Agent  {
 				}				
 
 			}
-		}
-			
+//			else
+//				block();
+		}			
 		
 	}
 
 	private class RequestOrder extends OneShotBehaviour{
+
+		public RequestOrder(Agent a) {
+			super(a);
+		}
 
 		@Override
 		public void action() {
@@ -210,7 +254,7 @@ public class CustomerAgent extends Agent  {
 			double quantity = Math.floor(1 + 50 * Math.random());
 			double price = Math.floor(100 + 500 * Math.random());
 			double dueDate = Math.floor(1 + 10 * Math.random());
-			double fee = quantity * Math.floor(1 + 50 * Math.random());
+			//double fee = quantity * Math.floor(1 + 50 * Math.random());
 			
 			Order order = new Order(pc, quantity, price, dueDate);
 			order.setCustomer(myAgent.getAID());

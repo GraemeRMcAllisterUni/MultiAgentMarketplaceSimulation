@@ -18,7 +18,12 @@ public class Item implements Concept {
 	
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName();
+		String itemString = this.getClass().getSimpleName();
+		
+		if(this.id != 0)
+			itemString = itemString.concat(". ID: " + this.getId());
+
+		return itemString;
 	}
 	
 	//public int id;

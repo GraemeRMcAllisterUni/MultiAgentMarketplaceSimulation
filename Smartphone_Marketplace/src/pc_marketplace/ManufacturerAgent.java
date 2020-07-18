@@ -1,4 +1,4 @@
-package smartphone_marketplace;
+package pc_marketplace;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,20 +30,23 @@ import jade.lang.acl.MessageTemplate;
 import ontology.PCOntology;
 import ontology.elements.*;
 
-public class ManufacturerAgent extends Agent {
+@SuppressWarnings("serial")
+public class ManufacturerAgent extends MarketPlaceAgent {
 
-	double acceptableProfitMargin = 1000;
+	double acceptableProfitMargin = -100000;
 	private AID supplier1AID;
 	private AID supplier2AID;
 	private List<AID> supplierAgents = new ArrayList<>();
-	private AID tickerAgent;
 	private List<AID> customerAgents = new ArrayList<>();
+	private AID tickerAgent;
+	// private List<AID> customerAgents = new ArrayList<>();
 	private Codec codec = new SLCodec();
 	private Ontology ontology = PCOntology.getInstance();
-	int noOfCustomers = 3;
-	int w = 1;
-	int p = 50;
-	int a = 50;
+
+	int noOfCustomers = 3; // c
+	int w = 1; // the cost of warehouse storage per-day per-component is £1
+	int p = 50; // the per-day late delivery penalty is £50
+	int a = 50; // maximum number of PCs that can be assembled per day is 50
 
 	double Budget = 0;
 	double Profit = 0;
@@ -81,8 +84,8 @@ public class ManufacturerAgent extends Agent {
 			DFService.register(this, dfd);
 		} catch (FIPAException e) {
 			e.printStackTrace();
-
 		}
+		tickerAgent = new AID("Ticker", AID.ISLOCALNAME);
 
 		suppler1Stock.put(new CPU(CPUManufacturer.Mintel), (double) 200);
 		suppler1Stock.put(new CPU(CPUManufacturer.IMD), (double) 150);
@@ -103,6 +106,8 @@ public class ManufacturerAgent extends Agent {
 		suppler2Stock.put(new HardDrive(2048), (double) 65);
 
 		addBehaviour(new TickerWaiter(this));
+		addBehaviour(new FindCustomers(this));
+		addBehaviour(new FindSuppliers(this));
 	}
 
 	public class TickerWaiter extends CyclicBehaviour {
@@ -114,7 +119,7 @@ public class ManufacturerAgent extends Agent {
 
 		@Override
 		public void action() {
-			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchContent("new day"),
+			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchSender(tickerAgent),
 					MessageTemplate.MatchContent("terminate"));
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
@@ -122,31 +127,42 @@ public class ManufacturerAgent extends Agent {
 					tickerAgent = msg.getSender();
 				}
 				if (msg.getContent().equals("new day")) {
+					System.out.println(myAgent.getLocalName() + " heard " + msg.getContent());
 					// spawn new sequential behaviour for day's activities
+					System.out.println("Running Proft: " + Profit);
+					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
+					SequentialBehaviour dailyActivity = new SequentialBehaviour();
+
+					DoStock ds = new DoStock(myAgent);
+					OrderRequest or = new OrderRequest(myAgent);
+
+					dailyActivity.addSubBehaviour(ds);
+					cyclicBehaviours.add(or);
+					dailyActivity.addSubBehaviour(or);
+					dailyActivity.addSubBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
+					
+					myAgent.addBehaviour(dailyActivity);
+
+				} else if (msg.getContent().equals("afternoon")) {
+					System.out.println(myAgent.getLocalName() + " heard " + msg.getContent());
 
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
-
 					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					DoStock ds = new DoStock();
-					AcceptOrders ao = new AcceptOrders();
-					FindSuppliers fs = new FindSuppliers();
-					OrderRequest or = new OrderRequest();
-					ReceiveSupplies rs = new ReceiveSupplies();
-					AssemblePC as = new AssemblePC();
-					PayFees pf = new PayFees();
-					dailyActivity.addSubBehaviour(fs);
-					dailyActivity.addSubBehaviour(or);
-					dailyActivity.addSubBehaviour(rs);
-					dailyActivity.addSubBehaviour(ao);
-					dailyActivity.addSubBehaviour(as);					
+
+					ReceiveSupplies rs = new ReceiveSupplies(myAgent);
+
+					AssemblePC as = new AssemblePC(myAgent);
+					PayFees pf = new PayFees(myAgent);
+
+					dailyActivity.addSubBehaviour(as);
 					dailyActivity.addSubBehaviour(pf);
-
-					cyclicBehaviours.add(or);
-					cyclicBehaviours.add(fs);
-
+					
+					cyclicBehaviours.add(rs);
+					myAgent.addBehaviour(rs);
 					myAgent.addBehaviour(dailyActivity);
-					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
+					dailyActivity.addSubBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
 
+					
 				} else {
 					// termination message to end simulation
 					myAgent.doDelete();
@@ -160,6 +176,10 @@ public class ManufacturerAgent extends Agent {
 
 	public class DoStock extends OneShotBehaviour {
 
+		public DoStock(Agent a) {
+			super(a);
+		}
+
 		@Override
 		public void action() {
 			for (Order o : orderBacklog)
@@ -172,28 +192,33 @@ public class ManufacturerAgent extends Agent {
 
 		int assembled = 0;
 
+		public AssemblePC(Agent a) {
+			super(a);
+		}
+
 		@Override
 		public void action() {
 			for (Order o : orderBacklog) {
 				if (canBuild(o)) {
-
-					PC pc = (PC) o.getItem();
-					for (Component comp : pc.getComponents()) {
-						// double stock = warehouse.get(comp);
-						warehouse.replace(comp, warehouse.get(comp) - o.getQuantity());
-					}
-
-					ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-					msg.addReceiver(o.getCustomer()); // sellerAID is the AID of the Seller agent
-					msg.setLanguage(codec.getName());
-					msg.setOntology(ontology.getName());
-
-					Action requestOrder = new Action();
-					requestOrder.setAction(o);
-					requestOrder.setActor(myAgent.getAID());
-
 					try {
-						// Let JADE convert from Java objects to string
+
+						PC pc = (PC) o.getItem();
+						for (Component comp : pc.getComponents()) {
+							// double stock = warehouse.get(comp);
+							warehouse.replace(comp, warehouse.get(comp) - o.getQuantity());
+						}
+
+						ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+						msg.addReceiver(o.getCustomer()); // sellerAID is the AID of the Seller agent
+						msg.setLanguage(codec.getName());
+						msg.setOntology(ontology.getName());
+
+						Action requestOrder = new Action();
+						requestOrder.setAction(o);
+						requestOrder.setActor(myAgent.getAID());
+
+						Profit += (o.getPrice() * o.getQuantity());
+
 						getContentManager().fillContent(msg, requestOrder); // send the wrapper object
 						send(msg);
 						o.setFulfilled(true);
@@ -225,30 +250,76 @@ public class ManufacturerAgent extends Agent {
 
 	public class PayFees extends OneShotBehaviour {
 
+		public PayFees(Agent a) {
+			super(a);
+		}
+
 		@Override
 		public void action() {
-			for(Order o : orderBacklog){
-				if(o.getDueDate()<1)
-					Profit = Profit - w;
+			for (Order o : orderBacklog) {
+				if (o.getDueDate() < 1)
+					Profit = Profit - p;
 			}
+			warehouse.forEach((k, v) -> Profit = Profit + (v * w));
 		}
 
 	}
 
 	public class FindSuppliers extends OneShotBehaviour {
 
+		public FindSuppliers(Agent a) {
+			super(a);
+		}
+
 		public void action() {
-			supplier1AID = new AID("Supplier 1", AID.ISLOCALNAME);
-			supplier2AID = new AID("Supplier 2", AID.ISLOCALNAME);
-			supplierAgents.add(supplier1AID);
-			supplierAgents.add(supplier2AID);
+			String[] agents = { "supplier" };
+
+			for (String a : agents) {
+
+				DFAgentDescription agentDesc = new DFAgentDescription();
+				ServiceDescription serviceDesc = new ServiceDescription();
+				serviceDesc.setType(a);
+				agentDesc.addServices(serviceDesc);
+				try {
+					DFAgentDescription[] agentsFound = DFService.search(myAgent, agentDesc);
+					for (DFAgentDescription aF : agentsFound)
+						supplierAgents.add(aF.getName()); // this is the AID
+				} catch (FIPAException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	public class FindCustomers extends OneShotBehaviour {
+
+		public FindCustomers(Agent a) {
+			super(a);
+		}
+
+		public void action() {
+			String[] agents = { "customer" };
+
+			for (String a : agents) {
+
+				DFAgentDescription agentDesc = new DFAgentDescription();
+				ServiceDescription serviceDesc = new ServiceDescription();
+				serviceDesc.setType(a);
+				agentDesc.addServices(serviceDesc);
+				try {
+					DFAgentDescription[] agentsFound = DFService.search(myAgent, agentDesc);
+					for (DFAgentDescription aF : agentsFound)
+						customerAgents.add(aF.getName()); // this is the AID
+				} catch (FIPAException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 
 	public class EndDayListener extends Behaviour {
 		private int customersDone;
 		private List<Behaviour> toRemove;
-		boolean allDelivered = false;
 
 		public EndDayListener(Agent a, List<Behaviour> toRemove) {
 			super(a);
@@ -261,48 +332,59 @@ public class ManufacturerAgent extends Agent {
 
 			MessageTemplate mt = MessageTemplate.MatchContent("done");
 			ACLMessage msg = myAgent.receive(mt);
-			if(msg != null){
-				if(msg.getSender().getName().contains("Customer")) {
-				customersDone++;
-				if(customersDone == noOfCustomers)
-				{
+			if (msg != null) {
+				if (msg.getSender().getName().contains("Customer")) {
+					customersDone++;
+					if (customersDone == noOfCustomers-1) {
+						ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+						supplierAgents.forEach(sa -> tick.addReceiver(sa));
+						tick.setContent("done");
+						myAgent.send(tick); // telling suppliers no more orders for components
+					}
+
+				} else if (msg.getSender().getName().contains("Postman")) {
+					customersDone = noOfCustomers-1;
 					ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-					supplierAgents.forEach(sa -> tick.addReceiver(sa));
-					tick.setContent("done"); 
+					customerAgents.forEach(sa -> tick.addReceiver(sa));
+					tick.setContent("done");
 					myAgent.send(tick); // telling suppliers no more orders for components
 				}
-				}
-				else if(msg.getSender().getName().contains("Postman"))
-				{
-					allDelivered = true;
-				}
-				if(done()) {					
-					ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-					//we are finished				
-					tick.addReceiver(tickerAgent);
-					tick.setContent("done");
-					myAgent.send(tick);
-					//remove behaviours
-					for(Behaviour b : toRemove) {
-						myAgent.removeBehaviour(b);
-					}
-					myAgent.removeBehaviour(this);
-					System.out.println("manufacturer done");
-				}
+
+				else
+					block();
 			}
-			else
-			{
+			else {
 				block();
 			}
 		}
 
 		@Override
 		public boolean done() {
-			return customersDone >= noOfCustomers && allDelivered;
+			return customersDone >= noOfCustomers-1;
+		}
+
+		public int onEnd() {
+			ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+			customersDone = 0;
+			// we are finished
+			tick.addReceiver(tickerAgent);
+			tick.setContent("done");
+			myAgent.send(tick);
+			// remove behaviours
+			for (Behaviour b : toRemove) {
+				myAgent.removeBehaviour(b);
+			}
+			myAgent.removeBehaviour(this);
+			System.out.println("manufacturer done");
+			return 0;
 		}
 	}
 
-	private class ReceiveSupplies extends OneShotBehaviour {
+	private class ReceiveSupplies extends CyclicBehaviour {
+
+		public ReceiveSupplies(Agent a) {
+			super(a);
+		}
 
 		@Override
 		public void action() {
@@ -310,7 +392,6 @@ public class ManufacturerAgent extends Agent {
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
 			ACLMessage msg = receive(mt);
 			if (msg != null) {
-				System.out.println("I don;t think we hit this. Message from " + msg.getSender().getName());
 				if (msg.getSender().getName().contains("Postman"))
 					try {
 						ContentElement ce = null;
@@ -330,7 +411,7 @@ public class ManufacturerAgent extends Agent {
 									} else
 										warehouse.put(c, stock);
 
-									System.out.println("Manufacturer Warehouse:" + warehouse);
+									
 								}
 							}
 						}
@@ -339,7 +420,6 @@ public class ManufacturerAgent extends Agent {
 					} catch (OntologyException oe) {
 						oe.printStackTrace();
 					}
-
 			}
 
 		}
@@ -352,6 +432,10 @@ public class ManufacturerAgent extends Agent {
 
 		PC pc = new PC();
 		Order order = new Order();
+
+		public OrderRequest(Agent a) {
+			super(a);
+		}
 
 		@Override
 		public void action() {
@@ -374,6 +458,7 @@ public class ManufacturerAgent extends Agent {
 									ACLMessage orderMsg;
 									if (strategy()) {
 										orderMsg = new ACLMessage(ACLMessage.AGREE);
+										System.out.println("Accepted: " + order);
 										orderSupplies();
 										orderBacklog.add(order);
 										Collections.sort(orderBacklog, new Comparator<Order>() {
@@ -402,9 +487,8 @@ public class ManufacturerAgent extends Agent {
 										warehouse.replace(c, numberofItems + stock);
 									} else
 										warehouse.put(c, numberofItems);
-
+									System.out.println("Manufacturer Warehouse:" + warehouse);
 								}
-								System.out.println("Manufacturer Warehouse:" + warehouse);
 							}
 						}
 					}
@@ -429,16 +513,15 @@ public class ManufacturerAgent extends Agent {
 				supplierOrder.setQuantity(order.getQuantity());
 				Action requestOrder = new Action();
 				if (preferLower && suppler2Stock.containsKey(c)) {
-					msg.addReceiver(supplier2AID);
-					requestOrder.setActor(supplier2AID);
+					msg.addReceiver(supplierAgents.get(1));
+					requestOrder.setActor(supplierAgents.get(1));
 					supplierOrder.setPrice(suppler2Stock.get(c));
 				} else {
-					requestOrder.setActor(supplier1AID);
-					msg.addReceiver(supplier1AID);
+					requestOrder.setActor(supplierAgents.get(0));
+					msg.addReceiver(supplierAgents.get(0));
 					supplierOrder.setPrice(suppler1Stock.get(c));
 				}
 				try {
-
 					requestOrder.setAction(supplierOrder);
 					getContentManager().fillContent(msg, requestOrder);
 					send(msg);
@@ -474,7 +557,7 @@ public class ManufacturerAgent extends Agent {
 				else
 					cP = suppler1Stock.get(comp);
 
-				componentsPrice += cP * quantity;
+				componentsPrice = componentsPrice + (cP * quantity);
 			}
 
 			double dd = dueDate;
@@ -484,12 +567,10 @@ public class ManufacturerAgent extends Agent {
 				dd = 4 - dueDate;
 			}
 
-			expectedProfit = price * quantity - componentsPrice;
+			expectedProfit = (price * quantity - componentsPrice) - (dd * fee);
 
-//			System.out.println(expectedProfit + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
-//			System.out.println("expected = totalPrice:"+ expectedProfit +" - " + "Expected days fee applied:" + dd + " * fee:" + fee);
+			System.out.println("expected:"+expectedProfit);
 
-			expectedProfit = expectedProfit - dd * fee;
 
 			if (expectedProfit < acceptableProfitMargin || (dueDate < 4 && (4 - dueDate * fee) > expectedProfit))
 				return false;
@@ -498,23 +579,13 @@ public class ManufacturerAgent extends Agent {
 			return true;
 		}
 
-		public void reset() {
-			ordersReceived = 0;
-			super.reset();
-		}
-
 		@Override
 		public boolean done() {
-			if (ordersReceived >= noOfCustomers) {
-				return true;
-			} else
-				return false;
+			return ordersReceived >= noOfCustomers-1;
 		}
 
 		public int onEnd() {
-			reset();
 			return 0;
-
 		}
 	}
 
@@ -525,15 +596,6 @@ public class ManufacturerAgent extends Agent {
 			DFService.deregister(this);
 		} catch (FIPAException e) {
 			e.printStackTrace();
-		}
-
-	}
-
-	private class AcceptOrders extends OneShotBehaviour {
-
-		@Override
-		public void action() {
-
 		}
 
 	}

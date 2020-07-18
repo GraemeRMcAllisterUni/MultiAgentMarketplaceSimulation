@@ -1,16 +1,13 @@
-package smartphone_marketplace;
+package pc_marketplace;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+
 
 import jade.core.*;
 import jade.core.Runtime;
 import jade.tools.sniffer.Sniffer;
 import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
-import ontology.elements.Component;
 
 public class Main {
 
@@ -20,7 +17,7 @@ public class Main {
 
 	static int p = 50; // per day late fee
 
-	static int a = 50;
+	static int a = 50; // max number of PC assembled in a day
 
 	public static void main(String[] args) {
 		Object[] agentArgs = new Object[4];

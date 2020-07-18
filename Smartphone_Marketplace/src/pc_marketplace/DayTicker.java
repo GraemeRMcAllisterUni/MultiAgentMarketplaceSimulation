@@ -1,7 +1,7 @@
 /**
  * 
  */
-package smartphone_marketplace;
+package pc_marketplace;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,8 +17,9 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
-public class DayTicker extends Agent {
-	public static final int NUM_DAYS = 30;
+@SuppressWarnings("serial")
+public class DayTicker extends MarketPlaceAgent {
+	public static final int NUM_DAYS = 31;
 	@Override
 	protected void setup() {
 		//add this agent to the yellow pages
@@ -55,7 +56,7 @@ public class DayTicker extends Agent {
 
 		private int step = 0;
 		private int numFinReceived = 0; //finished messages from other agents
-		private int day = 0;
+		private int day = 1;
 		private ArrayList<AID> marketplaceAgents = new ArrayList<>();
 		/**
 		 * @param a	the agent executing the behaviour
@@ -63,65 +64,80 @@ public class DayTicker extends Agent {
 		public SynchAgentsBehaviour(Agent a) {
 			super(a);
 		}
+		
+		public void dayShift(String messege) {
+			System.out.println("\n\nSetting up " + messege + " " + day +"\n");
+			//doWait(9000);
+			//find all agents using directory service
+			List<String> agents =  Arrays.asList("customer", "manufacturer", "supplier", "postman");
+			marketplaceAgents = new ArrayList<>();
+			for(String a : agents)
+			{
+				DFAgentDescription agentDesc = new DFAgentDescription();
+				ServiceDescription serviceDesc = new ServiceDescription();
+				serviceDesc.setType(a);
+				agentDesc.addServices(serviceDesc);
+				try{
+					DFAgentDescription[] agentsFound  = DFService.search(myAgent,agentDesc); 
+					
+					for(DFAgentDescription aF : agentsFound) {
+						marketplaceAgents.add(aF.getName()); // this is the AID						
+					}
+				}
+				catch(FIPAException e) {
+					e.printStackTrace();
+				}
+			}
+			ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+			tick.setContent(messege);
+			for(AID id : marketplaceAgents) {
+				tick.addReceiver(id);
+			}
+			myAgent.send(tick);
+			step++;
+		}
+		
+		public void timePass() {
+			MessageTemplate mt = MessageTemplate.MatchContent("done");
+			ACLMessage msg = myAgent.receive(mt);
+			if(msg != null) {
+				numFinReceived++;
+				System.out.println(msg.getSender().getLocalName() + " sent ticker done messege");
+				if(numFinReceived >= marketplaceAgents.size()-1) {
+					doWait(2000);
+					step++;
+					numFinReceived = 0;
+				}
+			}
+			else {
+				block();
+			}
+		}
+		
 
 		@Override
 		public void action() {
+			
 			switch(step) {
 			case 0:
-				System.out.println("\n\nSetting up day " + day +"\n");
-				//doWait(9000);
-				//find all agents using directory service
-				List<String> agents =  Arrays.asList("customer", "manufacturer", "supplier", "postman");
-				for(String a : agents)
-				{
-					DFAgentDescription agentDesc = new DFAgentDescription();
-					ServiceDescription serviceDesc = new ServiceDescription();
-					serviceDesc.setType(a);
-					agentDesc.addServices(serviceDesc);
-					try{
-						DFAgentDescription[] agentsFound  = DFService.search(myAgent,agentDesc); 
-						
-						for(DFAgentDescription aF : agentsFound) {
-							marketplaceAgents.add(aF.getName()); // this is the AID						
-						}
-					}
-					catch(FIPAException e) {
-						e.printStackTrace();
-					}
-				}
-		
-
-				//send new day message to each agent
-				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-				tick.setContent("new day");
-				for(AID id : marketplaceAgents) {
-					tick.addReceiver(id);
-				}
-				myAgent.send(tick);
-				step++;
-				day++;
+				 dayShift("afternoon");
 				break;
 			case 1:
-				//wait to receive a "done" message from all agents
-				MessageTemplate mt = MessageTemplate.MatchContent("done");
-				ACLMessage msg = myAgent.receive(mt);
-				if(msg != null) {
-					numFinReceived++;
-					System.out.println(msg.getSender().getLocalName() + " sent ticker done messege");
-					if(numFinReceived >= marketplaceAgents.size()) {
-						step++;
-					}
-				}
-				else {
-					block();
-				}
-
+				timePass();
+				break;
+			case 2:
+				dayShift("new day");
+				day++;
+				break;
+			case 3:
+				timePass();
+				break;
 			}
 		}
 
 		@Override
 		public boolean done() {
-			return step == 2;
+			return step == 4;
 		}
 
 		
