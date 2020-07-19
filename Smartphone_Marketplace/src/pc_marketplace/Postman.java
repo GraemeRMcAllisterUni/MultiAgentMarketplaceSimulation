@@ -1,4 +1,4 @@
-package smartphone_marketplace;
+package pc_marketplace;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,14 +32,15 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 
 
 
-public class Postman extends Agent  {
+@SuppressWarnings("serial")
+public class Postman extends MarketPlaceAgent  {
 
 	private List<AID> supplierAgents = new ArrayList<>();
 	private AID manufacturerAID;
 	private AID tickerAgent;
 	private Codec codec = new SLCodec();
 	private Ontology ontology = PCOntology.getInstance();
-	int noOfCustomers = 3;
+	//int noOfCustomers = 3;
 	private HashMap<Order, Double> transit = new HashMap<Order, Double>();
 	private int orderNumber = 1;
 
@@ -86,6 +87,47 @@ public class Postman extends Agent  {
 		addBehaviour(new TickerWaiter(this));
 				
 	}
+	
+	public class TickerWaiter extends CyclicBehaviour { // receives new day notice
+
+		//behaviour to wait for a new day
+		public TickerWaiter(Agent a) {
+			super(a);
+		}
+
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchContent("new day"),
+					MessageTemplate.MatchContent("terminate"));
+			ACLMessage msg = myAgent.receive(mt); 
+			if(msg != null) {
+				if(tickerAgent == null) {
+					tickerAgent = msg.getSender();
+				}
+				if(msg.getContent().equals("new day")) {
+					SequentialBehaviour dailyActivity = new SequentialBehaviour();
+					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();	
+					
+					Deliver d = new Deliver();						
+					CyclicBehaviour po = new PostalOrder();	
+					
+					cyclicBehaviours.add(po);										
+					dailyActivity.addSubBehaviour(d);
+					dailyActivity.addSubBehaviour(po);					
+					myAgent.addBehaviour(dailyActivity);					
+					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
+				}
+				else {
+					//termination message to end simulation
+					myAgent.doDelete();
+				}
+			}
+			else{
+				block();
+			}
+		}
+
+	}
 
 	
 	private class Deliver extends OneShotBehaviour{ // sends mail to manufacturer after set days in "transit"
@@ -118,6 +160,7 @@ public class Postman extends Agent  {
 					//comp.setCustomer(myAgent.getAID());
 					deliver.setAction(comp);
 					deliver.setActor(manufacturerAID);
+					msg.setConversationId("delivery");
 
 					try {
 						// Let JADE convert from Java objects to string
@@ -162,18 +205,17 @@ public class Postman extends Agent  {
 							Order order = (Order)action;
 							Item it = order.getItem();
 							if(it instanceof Component){
-								Component c = (Component)it;							
+								Order compOrder = new Order();
+								Component c = (Component) it;
 								c.setId(orderNumber);
-								//order.setItem(c);
-								if(msg.getSender().getName().contains("Supplier 1"))
-								{
-									transit.put(order, (double)1);
+								compOrder.setItem(c);
+								compOrder.setQuantity(order.getQuantity());
+								if (msg.getSender().getName().contains("Supplier 1")) {
+									transit.put(compOrder, (double) 1);
+								} else {
+									transit.put(compOrder, (double) 4);
 								}
-								else
-								{
-									transit.put(order, (double)4);									
-								}
-								//System.out.println(transit);
+								// System.out.println(transit);
 								orderNumber++;
 							}
 						}
@@ -191,45 +233,6 @@ public class Postman extends Agent  {
 	}
 
 
-	public class TickerWaiter extends CyclicBehaviour { // receives new day notice
-
-		//behaviour to wait for a new day
-		public TickerWaiter(Agent a) {
-			super(a);
-		}
-
-		@Override
-		public void action() {
-			MessageTemplate mt = MessageTemplate.or(MessageTemplate.MatchContent("new day"),
-					MessageTemplate.MatchContent("terminate"));
-			ACLMessage msg = myAgent.receive(mt); 
-			if(msg != null) {
-				if(tickerAgent == null) {
-					tickerAgent = msg.getSender();
-				}
-				if(msg.getContent().equals("new day")) {
-					SequentialBehaviour dailyActivity = new SequentialBehaviour();
-					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();						
-					Deliver d = new Deliver();						
-					CyclicBehaviour po = new PostalOrder();							
-					cyclicBehaviours.add(po);										
-					dailyActivity.addSubBehaviour(d);
-					dailyActivity.addSubBehaviour(po);					
-					myAgent.addBehaviour(dailyActivity);					
-					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
-				}
-				else {
-					//termination message to end simulation
-					myAgent.doDelete();
-				}
-			}
-			else{
-				block();
-			}
-		}
-
-	}
-
 
 	public class EndDayListener extends CyclicBehaviour {// listens to hear no more post orders
 		private List<Behaviour> toRemove;
@@ -244,8 +247,7 @@ public class Postman extends Agent  {
 
 			MessageTemplate mt = MessageTemplate.MatchContent("done");
 			ACLMessage msg = myAgent.receive(mt);
-			if(msg!=null) {	
-				
+			if(msg!=null) {					
 				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
 				tick.setContent("done");
 				tick.addReceiver(manufacturerAID);

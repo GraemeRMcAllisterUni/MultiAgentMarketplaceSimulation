@@ -1,4 +1,4 @@
-package smartphone_marketplace;
+package pc_marketplace;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,7 +20,7 @@ public class Main {
 
 	static int p = 50; // per day late fee
 
-	static int a = 50;
+	static int a = 50; // amount of PC's that can be assembled per day
 
 	public static void main(String[] args) {
 		Object[] agentArgs = new Object[4];

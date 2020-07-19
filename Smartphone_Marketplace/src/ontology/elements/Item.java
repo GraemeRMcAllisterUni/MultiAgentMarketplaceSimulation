@@ -18,18 +18,12 @@ public class Item implements Concept {
 	
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName();
+		String itemString = this.getClass().getSimpleName();
+		
+		if(this.id != 0)
+			itemString = itemString.concat(". ID: " + this.getId());
+
+		return itemString;
 	}
 	
-	//public int id;
-	//private double Price = 0;
-
-//	public int getId() {
-//		return id;
-//	}
-//
-//	public void setId(int id) {
-//		this.id = id;
-//	}
-
 }

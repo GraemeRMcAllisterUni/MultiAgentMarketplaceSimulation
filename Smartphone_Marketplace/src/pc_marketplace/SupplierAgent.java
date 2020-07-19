@@ -1,4 +1,4 @@
-package smartphone_marketplace;
+package pc_marketplace;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +28,8 @@ import ontology.PCOntology;
 import ontology.elements.*;
 
 
-public class SupplierAgent extends Agent {
+@SuppressWarnings("serial")
+public class SupplierAgent extends MarketPlaceAgent {
 
 	private AID tickerAgent;
 	private AID postman;
@@ -36,13 +37,13 @@ public class SupplierAgent extends Agent {
 	private Ontology ontology = PCOntology.getInstance();
 	
 	
-	HashMap<Component, Double> stock = new HashMap<Component, Double>();
-	
-	
-	void setStock(HashMap stock) {
-		this.stock = stock;
-		
-	}
+//	HashMap<Component, Double> stock = new HashMap<Component, Double>();
+//	
+//	
+//	void setStock(HashMap<Component, Double> stock) {
+//		this.stock = stock;
+//		
+//	}
 
 
 	protected void setup(){
@@ -64,33 +65,33 @@ public class SupplierAgent extends Agent {
 
 		//HashMap<Component, Double> stock = new HashMap<Component, Double>();
 
-		if(this.getName().contains("Supplier 1"))
-		{
-			stock.put(new CPU(CPUManufacturer.Mintel),(double)200);
-			stock.put(new CPU(CPUManufacturer.IMD),(double)150);		
-			stock.put(new Motherboard(CPUManufacturer.Mintel),(double)125);
-			stock.put(new Motherboard(CPUManufacturer.IMD),(double)75);		
-			stock.put(new Memory(4),(double)50);
-			stock.put(new Memory(8),(double)90);
-			stock.put(new HardDrive(1024),(double)50);
-			stock.put(new HardDrive(2048),(double)75);
-			//System.out.println("Supplier 1 stock: " + stock);
-		}
-		else if (this.getName().contains("Supplier 2")) 
-		{
-
-			stock.put(new CPU(CPUManufacturer.Mintel),(double)175);
-			stock.put(new CPU(CPUManufacturer.IMD),(double)130);		
-			stock.put(new Motherboard(CPUManufacturer.Mintel),(double)115);
-			stock.put(new Motherboard(CPUManufacturer.IMD),(double)60);		
-			stock.put(new Memory(4),(double)40);
-			stock.put(new Memory(8),(double)80);
-			stock.put(new HardDrive(1024),(double)45);
-			stock.put(new HardDrive(2048),(double)65);
-			//System.out.println("Supplier 2 stock: " + stock);
-		}
-		else
-			System.out.println("Invalid Supplier");
+//		if(this.getName().contains("Supplier 1"))
+//		{
+//			stock.put(new CPU(CPUManufacturer.Mintel),(double)200);
+//			stock.put(new CPU(CPUManufacturer.IMD),(double)150);		
+//			stock.put(new Motherboard(CPUManufacturer.Mintel),(double)125);
+//			stock.put(new Motherboard(CPUManufacturer.IMD),(double)75);		
+//			stock.put(new Memory(4),(double)50);
+//			stock.put(new Memory(8),(double)90);
+//			stock.put(new HardDrive(1024),(double)50);
+//			stock.put(new HardDrive(2048),(double)75);
+//			//System.out.println("Supplier 1 stock: " + stock);
+//		}
+//		else if (this.getName().contains("Supplier 2")) 
+//		{
+//
+//			stock.put(new CPU(CPUManufacturer.Mintel),(double)175);
+//			stock.put(new CPU(CPUManufacturer.IMD),(double)130);		
+//			stock.put(new Motherboard(CPUManufacturer.Mintel),(double)115);
+//			stock.put(new Motherboard(CPUManufacturer.IMD),(double)60);		
+//			stock.put(new Memory(4),(double)40);
+//			stock.put(new Memory(8),(double)80);
+//			stock.put(new HardDrive(1024),(double)45);
+//			stock.put(new HardDrive(2048),(double)65);
+//			//System.out.println("Supplier 2 stock: " + stock);
+//		}
+//		else
+//			System.out.println("Invalid Supplier");
 
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);
@@ -116,9 +117,10 @@ public class SupplierAgent extends Agent {
 				}
 				if(msg.getContent().equals("new day")) {
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
-					OrderRequest or = new OrderRequest();
-					cyclicBehaviours.add(or);
-					myAgent.addBehaviour(or);
+					SuppliesOrder so = new SuppliesOrder();
+					cyclicBehaviours.add(so);
+					
+					myAgent.addBehaviour(so);
 					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
 				}
 				else {
@@ -133,7 +135,7 @@ public class SupplierAgent extends Agent {
 
 	}
 
-	private class OrderRequest extends CyclicBehaviour{
+	private class SuppliesOrder extends CyclicBehaviour{
 
 
 
@@ -196,7 +198,7 @@ public class SupplierAgent extends Agent {
 
 
 
-	public class EndDayListener extends CyclicBehaviour {
+	public class EndDayListener extends CyclicBehaviour {// listens to hear no more post orders
 		private List<Behaviour> toRemove;
 
 		public EndDayListener(Agent a, List<Behaviour> toRemove) {
@@ -206,24 +208,20 @@ public class SupplierAgent extends Agent {
 
 		@Override
 		public void action() {
+
 			MessageTemplate mt = MessageTemplate.MatchContent("done");
 			ACLMessage msg = myAgent.receive(mt);
-			if(msg != null) {
-				if(msg.getContent().equals("done")) {
-					ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
-					tick.setContent("done");
-					tick.addReceiver(tickerAgent);
-					tick.addReceiver(postman);
-					myAgent.send(tick);
-					//remove behaviours
-					for(Behaviour b : toRemove) {
-						myAgent.removeBehaviour(b);
-					}
-					myAgent.removeBehaviour(this);
-				}				
-			}
-			else {
-				block();
+			if(msg!=null) {					
+				ACLMessage tick = new ACLMessage(ACLMessage.INFORM);
+				tick.setContent("done");
+				tick.addReceiver(tickerAgent);
+				tick.addReceiver(postman);
+				myAgent.send(tick);
+				//remove behaviours
+				for(Behaviour b : toRemove) {
+					myAgent.removeBehaviour(b);
+				}
+				myAgent.removeBehaviour(this);
 			}
 
 		}

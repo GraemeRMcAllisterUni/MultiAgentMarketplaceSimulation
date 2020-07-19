@@ -44,7 +44,7 @@ public class Motherboard extends Component {
 	}
 	
 	@Override
-	public String toString() {		
+	public String toString() {	
 		return this.getManufacturer() + " " + super.toString();
 	}
 

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package smartphone_marketplace;
+package pc_marketplace;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,7 +17,9 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
-public class DayTicker extends Agent {
+
+@SuppressWarnings("serial")
+public class DayTicker extends MarketPlaceAgent {
 	public static final int NUM_DAYS = 30;
 	@Override
 	protected void setup() {
