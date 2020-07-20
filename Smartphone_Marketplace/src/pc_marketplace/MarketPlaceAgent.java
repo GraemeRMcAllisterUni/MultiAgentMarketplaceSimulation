@@ -27,7 +27,7 @@ public class MarketPlaceAgent extends Agent {
 
 		@Override
 		public void action() {
-			doWait(2000);
+			//doWait(2000);
 			ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 			for (AID a : Agents) {
 				msg.addReceiver(a);

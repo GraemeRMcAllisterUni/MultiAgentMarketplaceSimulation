@@ -32,17 +32,19 @@ import ontology.elements.*;
 @SuppressWarnings("serial")
 public class ManufacturerAgent extends MarketPlaceAgent {
 
-	double acceptableProfitMargin = 5000;
 	// private List<ComponentSupplier> supplierAgents = new ArrayList<>();
 	private List<ComponentSupplier> supplierAgents = new ArrayList<>();
 	private AID tickerAgent;
 	private List<AID> customerAgents = new ArrayList<>();
 	private Codec codec = new SLCodec();
 	private Ontology ontology = PCOntology.getInstance();
-	int noOfCustomers = 3;
-	int w = 1;
-	int p = 50;
-	int a = 50;
+	
+	int noOfCustomers;
+	int w;
+	int p;
+	int a;
+	
+	//double acceptableProfitMargin = 1000;
 
 	double Budget = 0;
 	double Profit = 0;
@@ -66,8 +68,6 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 					p = Integer.parseInt(args[2].toString());
 				if (args[3].toString() != null)
 					a = Integer.parseInt(args[3].toString());
-				if (args[4].toString() != null)
-					acceptableProfitMargin = Integer.parseInt(args[4].toString());
 			}
 		} finally {
 
@@ -120,7 +120,6 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 					ReceiveSupplies rs = new ReceiveSupplies();
 					AssemblePC as = new AssemblePC(myAgent);
 					PayFees pf = new PayFees(myAgent);
-
 					GetPayment gp = new GetPayment(myAgent);
 
 					myAgent.addBehaviour(gp);
@@ -152,7 +151,10 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 		@Override
 		public void action() {
 			for (Order o : orderBacklog) {
-				o.setDueDate(o.getDueDate() - 1);
+				if(o.getDueDate()!=1)
+					o.setDueDate(o.getDueDate() - 1);
+				if(o.getDueDate()<1)
+					o.setDueDate(1);
 			}
 			if (warehouse != null) {
 				// warehouse.values().removeIf(v -> v == 0);
@@ -233,7 +235,6 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 						try {
 							getContentManager().fillContent(msg, requestOrder); // send the wrapper object
 							send(msg);
-							doWait(7000);
 							o.setFulfilled(true);
 						} catch (CodecException ce) {
 							ce.printStackTrace();
@@ -463,6 +464,7 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 
 		PC pc = new PC();
 		Order order = new Order();
+		
 
 		@Override
 		public void action() {
@@ -492,10 +494,12 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 										orderBacklog.add(order);
 										Collections.sort(orderBacklog, new Comparator<Order>() {
 											public int compare(Order c1, Order c2) {
-												if (c1.getDueDate() < c2.getDueDate())
-													return -1;
-												if (c1.getDueDate() > c2.getDueDate())
+												double c1Fee = ((p/(c1.getDueDate()))+(w*c1.getQuantity()));
+												double c2Fee = ((p/(c2.getDueDate()))+(w*c2.getQuantity()));
+												if (c1Fee < c2Fee)
 													return 1;
+												if (c1Fee> c2Fee)
+													return -1;
 												return 0;
 											}
 										});
@@ -564,6 +568,10 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 		}
 
 		Boolean strategy() {
+			
+			double lateFeeBias = 0.2;
+			double warehouseFeeBias = 0.6;
+			double dailyQuotaBias = 2;
 
 			// Boolean accepted = true;
 			double price = order.getPrice();
@@ -586,20 +594,32 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 					bestPrice = quote;
 				}
 			}
+			
+			double dailyQuota = (( quantity/a ) * noOfCustomers);
+			
+			if(dailyQuota>noOfCustomers)
+				return false;
+			
+			double riskFactor = (( noOfCustomers * ( p * lateFeeBias ) ) + ( noOfCustomers * ( (1 + (w * (quantity * pc.getComponents().size() ))) * warehouseFeeBias ))) * (dailyQuota * dailyQuotaBias);
+				
+			//acceptableProfitMargin = acceptableProfitMargin + (riskFactor*dailyQuota);
 
 			componentsPrice = supplierAgents.get(count).quote(pc) * quantity;
 
-			expectedProfit = (price * quantity);
+			expectedProfit = (price * quantity) - componentsPrice;
+			
+			double finalMargin = riskFactor;
+			
 
 //			System.out.println(expectedProfit + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
 //			System.out.println("expected = totalPrice:"+ expectedProfit +" - " + "Expected days fee applied:" + dd + " * fee:" + fee);
 
 			// expectedProfit = expectedProfit - (dd * fee);
 
-			if (expectedProfit - componentsPrice < acceptableProfitMargin)
+			if (expectedProfit < finalMargin)
 				return false;
 
-			dailyOrders.put(order, expectedProfit - componentsPrice);
+			dailyOrders.put(order, expectedProfit);
 			return true;
 		}
 

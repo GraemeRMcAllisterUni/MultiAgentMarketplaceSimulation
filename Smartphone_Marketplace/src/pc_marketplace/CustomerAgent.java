@@ -58,7 +58,9 @@ public class CustomerAgent extends MarketPlaceAgent {
 		addBehaviour(new TickerWaiter(this));
 	}
 
-	public class OrderResponse extends OneShotBehaviour {
+	public class OrderResponse extends Behaviour {
+		
+		boolean messageReceived = false;
 
 		@Override
 		public void action() {
@@ -68,14 +70,21 @@ public class CustomerAgent extends MarketPlaceAgent {
 			if (msg != null) {
 				if (msg.getPerformative() == ACLMessage.AGREE) {
 					System.out.println(myAgent.getLocalName() + dailyOrder + ": offer accepted");
+					messageReceived = true;
 				} else if (msg.getPerformative() == ACLMessage.REFUSE) {
 					System.out.println(myAgent.getLocalName() + dailyOrder + ": offer rejected");
+					messageReceived = true;
 				} else
 					block();
 			} else {
 				block();
 			}
 
+		}
+
+		@Override
+		public boolean done() {
+			return messageReceived;
 		}
 	}
 

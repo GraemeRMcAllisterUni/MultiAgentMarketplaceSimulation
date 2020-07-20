@@ -8,8 +8,14 @@ import java.util.List;
 //import jade.content.onto.annotations.AggregateSlot;
 import jade.content.onto.annotations.Slot;
 
+@SuppressWarnings("serial")
 public class PC extends Item {
 		
+	@Override
+	public String toString() {
+		return cpu + " " + motherboard + " " + memory + " " + harddrive;
+	}
+
 	@Slot(mandatory = true)
 	private HardDrive harddrive;
 	@Slot(mandatory = true)

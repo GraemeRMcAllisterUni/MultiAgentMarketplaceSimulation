@@ -18,11 +18,9 @@ public class Main {
 	static int p = 50; // per day late fee
 
 	static int a = 50; // amount of PC's that can be assembled per day
-	
-	static int profitMargin = 3000; // amount of PC's that can be assembled per day
 
 	public static void main(String[] args) {
-		Object[] agentArgs = new Object[5];
+		Object[] agentArgs = new Object[4];
 		
 		try {
 			if (args.length != 0) {
@@ -30,14 +28,12 @@ public class Main {
 				agentArgs[1] = args[1];
 				agentArgs[2] = args[2];
 				agentArgs[3] = args[3];
-				agentArgs[4] = args[4];
 			}
 				else {
 					agentArgs[0] = c;
 					agentArgs[1] = w;
 					agentArgs[2] = p;
 					agentArgs[3] = a;
-					agentArgs[4] = profitMargin;
 			}
 		} 
 		catch(Exception ex) {
@@ -46,8 +42,6 @@ public class Main {
 		finally {
 			System.out.println(Arrays.toString(agentArgs));
 		}
-		
-		
 
 
 		Profile myProfile = new ProfileImpl();

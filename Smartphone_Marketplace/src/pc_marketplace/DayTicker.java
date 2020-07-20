@@ -20,7 +20,7 @@ import jade.lang.acl.MessageTemplate;
 
 @SuppressWarnings("serial")
 public class DayTicker extends MarketPlaceAgent {
-	public static final int NUM_DAYS = 31;
+	public static final int NUM_DAYS = 101;
 	@Override
 	protected void setup() {
 		//add this agent to the yellow pages
