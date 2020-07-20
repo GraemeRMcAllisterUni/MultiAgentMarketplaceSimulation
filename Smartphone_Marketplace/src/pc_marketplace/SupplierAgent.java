@@ -7,6 +7,7 @@ import java.util.List;
 import Manufacturer.CPUManufacturer;
 import jade.content.Concept;
 import jade.content.ContentElement;
+import jade.content.Predicate;
 import jade.content.lang.Codec;
 import jade.content.lang.Codec.CodecException;
 import jade.content.lang.sl.SLCodec;
@@ -36,15 +37,10 @@ public class SupplierAgent extends MarketPlaceAgent {
 	private Codec codec = new SLCodec();
 	private Ontology ontology = PCOntology.getInstance();
 	
+	HashMap<Component, Double> stock = new HashMap<Component, Double>();
 	
-//	HashMap<Component, Double> stock = new HashMap<Component, Double>();
-//	
-//	
-//	void setStock(HashMap<Component, Double> stock) {
-//		this.stock = stock;
-//		
-//	}
-
+	ComponentSupplier compSeller = new ComponentSupplier(this.getAID());
+	Stock myStock = new Stock();
 
 	protected void setup(){
 
@@ -63,35 +59,40 @@ public class SupplierAgent extends MarketPlaceAgent {
 
 		postman = new AID("Postman",AID.ISLOCALNAME);
 
-		//HashMap<Component, Double> stock = new HashMap<Component, Double>();
 
-//		if(this.getName().contains("Supplier 1"))
-//		{
-//			stock.put(new CPU(CPUManufacturer.Mintel),(double)200);
-//			stock.put(new CPU(CPUManufacturer.IMD),(double)150);		
-//			stock.put(new Motherboard(CPUManufacturer.Mintel),(double)125);
-//			stock.put(new Motherboard(CPUManufacturer.IMD),(double)75);		
-//			stock.put(new Memory(4),(double)50);
-//			stock.put(new Memory(8),(double)90);
-//			stock.put(new HardDrive(1024),(double)50);
-//			stock.put(new HardDrive(2048),(double)75);
-//			//System.out.println("Supplier 1 stock: " + stock);
-//		}
-//		else if (this.getName().contains("Supplier 2")) 
-//		{
-//
-//			stock.put(new CPU(CPUManufacturer.Mintel),(double)175);
-//			stock.put(new CPU(CPUManufacturer.IMD),(double)130);		
-//			stock.put(new Motherboard(CPUManufacturer.Mintel),(double)115);
-//			stock.put(new Motherboard(CPUManufacturer.IMD),(double)60);		
-//			stock.put(new Memory(4),(double)40);
-//			stock.put(new Memory(8),(double)80);
-//			stock.put(new HardDrive(1024),(double)45);
-//			stock.put(new HardDrive(2048),(double)65);
-//			//System.out.println("Supplier 2 stock: " + stock);
-//		}
-//		else
-//			System.out.println("Invalid Supplier");
+		if(this.getName().contains("Supplier 1"))
+		{
+
+			myStock.addPart(new CPU(CPUManufacturer.Mintel),(double)200);
+			myStock.addPart(new CPU(CPUManufacturer.IMD),(double)150);		
+			myStock.addPart(new Motherboard(CPUManufacturer.Mintel),(double)125);
+			myStock.addPart(new Motherboard(CPUManufacturer.IMD),(double)75);		
+			myStock.addPart(new Memory(4),(double)50);
+			myStock.addPart(new Memory(8),(double)90);
+			myStock.addPart(new HardDrive(1024),(double)50);
+			myStock.addPart(new HardDrive(2048),(double)75);
+			compSeller.setStock(myStock);
+			compSeller.setDeliveryTime(1);
+			compSeller.setSupplier(this.getAID());
+			//System.out.println("Supplier 1 stock: " + stock);
+		}
+		else if (this.getName().contains("Supplier 2")) 
+		{			
+			myStock.addPart(new CPU(CPUManufacturer.Mintel),(double)175);
+			myStock.addPart(new CPU(CPUManufacturer.IMD),(double)130);		
+			myStock.addPart(new Motherboard(CPUManufacturer.Mintel),(double)115);
+			myStock.addPart(new Motherboard(CPUManufacturer.IMD),(double)60);		
+			myStock.addPart(new Memory(4),(double)40);
+			myStock.addPart(new Memory(8),(double)80);
+			myStock.addPart(new HardDrive(1024),(double)45);
+			myStock.addPart(new HardDrive(2048),(double)65);
+			compSeller.setStock(myStock);
+			compSeller.setDeliveryTime(4);
+			compSeller.setSupplier(this.getAID());
+			//System.out.println("Supplier 2 stock: " + stock);
+		}
+		else
+			System.out.println("Invalid Supplier");
 
 		getContentManager().registerLanguage(codec);
 		getContentManager().registerOntology(ontology);
@@ -118,9 +119,11 @@ public class SupplierAgent extends MarketPlaceAgent {
 				if(msg.getContent().equals("new day")) {
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();
 					SuppliesOrder so = new SuppliesOrder();
+					StockRequest sr = new StockRequest(myAgent);
 					cyclicBehaviours.add(so);
-					
+					cyclicBehaviours.add(sr);					
 					myAgent.addBehaviour(so);
+					myAgent.addBehaviour(sr);
 					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
 				}
 				else {
@@ -134,6 +137,37 @@ public class SupplierAgent extends MarketPlaceAgent {
 		}
 
 	}
+	
+	private class StockRequest extends CyclicBehaviour {
+
+		public StockRequest(Agent a) {
+			super(a);
+		}
+
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST),
+					MessageTemplate.MatchConversationId("stocklist"));
+			ACLMessage msg = myAgent.receive(mt);
+			if (msg != null) {
+				ACLMessage stockReply = new ACLMessage(ACLMessage.INFORM);
+				stockReply.addReceiver(msg.getSender());
+				stockReply.setLanguage(codec.getName());
+				stockReply.setOntology(ontology.getName());
+				stockReply.setConversationId("stocklist");
+				
+				try {
+					getContentManager().fillContent(stockReply, compSeller);
+					send(stockReply);
+				} catch (CodecException ce) {
+					ce.printStackTrace();
+				} catch (OntologyException oe) {
+					oe.printStackTrace();
+				}
+			}
+		}
+
+	}
 
 	private class SuppliesOrder extends CyclicBehaviour{
 
@@ -142,7 +176,8 @@ public class SupplierAgent extends MarketPlaceAgent {
 		public void action() {			
 
 			//This behaviour should only respond to REQUEST messages
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST); //this is messege (component and quantity)
+			MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST),
+					MessageTemplate.MatchConversationId("suppliesorder")); //this is messege (component and quantity)
 			ACLMessage msg = receive(mt);
 			if(msg != null){
 				try {

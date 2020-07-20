@@ -3,18 +3,29 @@ package ontology.elements;
 import java.util.ArrayList;
 import java.util.List;
 
-
+import jade.content.Concept;
 import jade.content.Predicate;
-
 import jade.core.AID;
 
 @SuppressWarnings("serial")
-public class ComponentSupplier implements Predicate{
+public class ComponentSupplier implements Predicate {
 
 
 	private AID supplier;
 
-	private List<Component> stock = new ArrayList<Component>();
+	private Stock stock = new Stock();
+
+	private double deliveryTime;
+	
+	
+	@Override
+	public String toString() {
+		return "ComponentSupplier [supplier=" + supplier + ", stock=" + stock + ", deliveryTime=" + deliveryTime + "]";
+	}
+
+	public ComponentSupplier() {
+		super();
+	}
 
 	public ComponentSupplier(AID name) {
 		this.supplier = name;
@@ -28,30 +39,30 @@ public class ComponentSupplier implements Predicate{
 		this.supplier = supplier;
 	}
 
-	public List<Component> getStock() {
+	public Stock getStock() {
 		return stock;
 	}
 
-	public void setStock(List<Component> stock) {
+	public void setStock(Stock stock) {
 		this.stock = stock;
 	}
 
-	
-	
+	public double getDeliveryTime() {
+		return deliveryTime;
+	}
 
-//	public HashMap getStock() {
-//		HashMap<Component, Double> stockList = new HashMap<>();
-//		for(int i=0; i<stock.size();i++) {
-//			stockList.put(stock.get(i), prices.get(i));
-//		}			
-//		return stockList;
-//	}
-
-//	public void setStock(HashMap<Component, Double> stockList) {
-//		stockList.forEach((k,v) ->{ 
-//			stock.add(k); 
-//			prices.add(v);
-//			});
-//	}
+	public void setDeliveryTime(double deliveryTime) {
+		this.deliveryTime = deliveryTime;
+	}
+	
+	public double quote(PC pc) {
+		double quote = 0;
+		for(Component c:pc.getComponents())
+		{
+			quote = quote + stock.getComponentPrice(c);
+		}
+		return quote;
+	}
+	
 
 }

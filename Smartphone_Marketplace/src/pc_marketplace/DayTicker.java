@@ -20,7 +20,7 @@ import jade.lang.acl.MessageTemplate;
 
 @SuppressWarnings("serial")
 public class DayTicker extends MarketPlaceAgent {
-	public static final int NUM_DAYS = 30;
+	public static final int NUM_DAYS = 31;
 	@Override
 	protected void setup() {
 		//add this agent to the yellow pages
@@ -57,7 +57,7 @@ public class DayTicker extends MarketPlaceAgent {
 
 		private int step = 0;
 		private int numFinReceived = 0; //finished messages from other agents
-		private int day = 0;
+		private int day = 1;
 		private ArrayList<AID> marketplaceAgents = new ArrayList<>();
 		/**
 		 * @param a	the agent executing the behaviour
@@ -109,9 +109,10 @@ public class DayTicker extends MarketPlaceAgent {
 				ACLMessage msg = myAgent.receive(mt);
 				if(msg != null) {
 					numFinReceived++;
-					System.out.println(msg.getSender().getLocalName() + " sent ticker done messege");
+					//System.out.println(msg.getSender().getLocalName() + " sent ticker done messege");
 					if(numFinReceived >= marketplaceAgents.size()) {
 						step++;
+						System.out.println("Day " + (day-1) + " done.");
 					}
 				}
 				else {

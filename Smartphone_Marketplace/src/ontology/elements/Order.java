@@ -8,7 +8,7 @@ public class Order implements AgentAction {
 	
 	@Override
 	public String toString() {
-		return "[item=" + item + ", quantity=" + quantity +"]"; // + ", itemPrice=" + itemPrice + ", duedate=" + duedate + ", fulfilled=" + fulfilled + "]";
+		return "[item=" + item + ", quantity=" + quantity + ", itemPrice=" + itemPrice + ", duedate=" + duedate + ", fulfilled=" + fulfilled + "]";
 	}
 
 	private AID customer;

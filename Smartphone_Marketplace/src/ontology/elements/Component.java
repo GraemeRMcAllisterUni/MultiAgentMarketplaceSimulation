@@ -4,10 +4,12 @@ import java.util.Objects;
 
 public class Component extends Item {
 
+
 	public Component(){
 		super();
 		//setId(0);
 	}
+
 	
     @Override
     public boolean equals(Object o) {
@@ -23,14 +25,11 @@ public class Component extends Item {
     }
     
 
-
 	@Override
 	public int hashCode() {
 		return 34;
 	}
-    
-    
-    
+       
     
 		
 }

@@ -175,7 +175,6 @@ public class Postman extends MarketPlaceAgent  {
 					} 
 
 				});
-				System.out.println("Delivered: " + compSent);
 				compSent.forEach(c -> transit.remove(c));
 				compSent.clear();
 			}
