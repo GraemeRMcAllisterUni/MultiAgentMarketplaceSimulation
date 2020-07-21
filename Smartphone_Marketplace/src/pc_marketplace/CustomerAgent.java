@@ -239,7 +239,7 @@ public class CustomerAgent extends MarketPlaceAgent {
 			}
 
 			double quantity = Math.floor(1 + 50 * Math.random());
-			double price = Math.floor(100 + 500 * Math.random());
+			double price = Math.floor((200 + 500)* Math.random());
 			double dueDate = Math.floor(1 + 10 * Math.random());
 			double fee = quantity * Math.floor(1 + 50 * Math.random());
 

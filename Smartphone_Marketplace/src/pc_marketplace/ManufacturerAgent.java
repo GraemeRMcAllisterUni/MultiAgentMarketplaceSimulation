@@ -136,6 +136,7 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
 
 				} else {
+					System.out.println("Profit on final day:" + Profit);
 					// termination message to end simulation
 					myAgent.doDelete();
 				}
@@ -407,7 +408,6 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 						myAgent.removeBehaviour(b);
 					}
 					myAgent.removeBehaviour(this);
-					System.out.println("manufacturer done");
 					customersDone = 0;
 					allDelivered = false;
 				}
@@ -570,7 +570,7 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 		Boolean strategy() {
 			
 			double lateFeeBias = 0.2;
-			double warehouseFeeBias = 0.6;
+			double warehouseFeeBias = 0.65;
 			double dailyQuotaBias = 2;
 
 			// Boolean accepted = true;
@@ -608,15 +608,13 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 
 			expectedProfit = (price * quantity) - componentsPrice;
 			
-			double finalMargin = riskFactor;
-			
 
 //			System.out.println(expectedProfit + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
 //			System.out.println("expected = totalPrice:"+ expectedProfit +" - " + "Expected days fee applied:" + dd + " * fee:" + fee);
 
 			// expectedProfit = expectedProfit - (dd * fee);
 
-			if (expectedProfit < finalMargin)
+			if (expectedProfit < riskFactor)
 				return false;
 
 			dailyOrders.put(order, expectedProfit);
