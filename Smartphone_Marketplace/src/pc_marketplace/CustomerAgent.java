@@ -105,7 +105,7 @@ public class CustomerAgent extends MarketPlaceAgent {
 					tickerAgent = msg.getSender();
 				}
 				if (msg.getContent().equals("new day")) {
-					doWait(1000);
+					doWait(500);
 
 					List<AID> marketPlaceAgents = Arrays.asList(manufacturerAID);// ,tickerAgent);
 					ArrayList<Behaviour> cyclicBehaviours = new ArrayList<>();

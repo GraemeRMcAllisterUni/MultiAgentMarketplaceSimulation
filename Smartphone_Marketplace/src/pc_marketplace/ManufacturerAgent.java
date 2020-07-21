@@ -136,7 +136,7 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 					myAgent.addBehaviour(new EndDayListener(myAgent, cyclicBehaviours));
 
 				} else {
-					System.out.println("Profit on final day:" + Profit);
+					System.out.println("\n\n\n\n\n\n\n\n\nProfit on final day:£" + Profit);
 					// termination message to end simulation
 					myAgent.doDelete();
 				}
@@ -188,7 +188,7 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 					double payment = Double.parseDouble(msg.getContent());
 					Profit = Profit + payment;
 					System.out.println("Manufacturer received payment of " + payment + " from "
-							+ msg.getSender().getLocalName() + " and profit now " + Profit);
+							+ msg.getSender().getLocalName() + " and profit now £" + Profit);
 				} catch (NumberFormatException ne) {
 					ne.printStackTrace();
 				}
@@ -287,7 +287,7 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 			if (runningFee != 0)
 				System.out.println("Paid £" + runningFee + " in storage fees");
 
-			System.out.println("Running profit = " + Profit);
+			System.out.println("Running profit = £" + Profit);
 		}
 	}
 
