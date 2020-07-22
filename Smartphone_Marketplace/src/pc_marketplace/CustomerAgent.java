@@ -193,7 +193,6 @@ public class CustomerAgent extends MarketPlaceAgent {
 							bill.setConversationId("payment");
 							bill.setLanguage(codec.getName());
 							bill.setOntology(ontology.getName());
-
 							Invoice payment = new Invoice( order.getPrice() * order.getQuantity() );
 							System.out.println(myAgent.getName()+ " Received " + pc + " and paid " + payment);
 							try {
@@ -224,35 +223,35 @@ public class CustomerAgent extends MarketPlaceAgent {
 		@Override
 		public void action() {
 			// Prepare the action request message
-			PC pc = new PC();
+			CPU cpu;
+			Motherboard mb;
+			Memory ram;
+			HardDrive hd;
+			
 			if (Math.random() < 0.5) {
-				pc.setCpu(new CPU(CPUManufacturer.Mintel));
-				pc.setMotherboard(new Motherboard(CPUManufacturer.Mintel));
+				cpu = new CPU(CPUManufacturer.Mintel);
+				mb = new Motherboard(CPUManufacturer.Mintel);
 			} else {
-				pc.setCpu(new CPU(CPUManufacturer.IMD));
-				pc.setMotherboard(new Motherboard(CPUManufacturer.IMD));
+				cpu = new CPU(CPUManufacturer.IMD);
+				mb = new Motherboard(CPUManufacturer.IMD);
 			}
 
-			if (Math.random() < 0.5) {
-				pc.setMemory(new Memory(4));
-				// RAM = 4Gb
-			} else {
-				pc.setMemory(new Memory(8));
-				// RAM = 8Gb
-			}
+			if (Math.random() < 0.5) 
+				ram = new Memory(4);
+			else 
+				ram = new Memory(8);
 
-			if (Math.random() < 0.5) {
-				pc.setHardDrive(new HardDrive(1024));
-				// Storage = 64Gb
-			} else {
-				pc.setHardDrive(new HardDrive(2048));
-				// Storage = 256Gb
-			}
+
+			if (Math.random() < 0.5)
+				hd = new HardDrive(1024);
+			else 
+				hd = new HardDrive(2048);
+			
+			PC pc = new PC(cpu, mb, ram, hd);
 
 			double quantity = Math.floor(1 + 50 * Math.random());
 			double price = Math.floor((200 + 500)* Math.random());
 			double dueDate = Math.floor(1 + 10 * Math.random());
-			double fee = quantity * Math.floor(1 + 50 * Math.random());
 
 			dailyOrder = new Order(pc, quantity, price, dueDate);
 			dailyOrder.setCustomer(myAgent.getAID());

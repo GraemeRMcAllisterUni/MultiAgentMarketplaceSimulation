@@ -30,7 +30,7 @@ public class PC extends Item {
 		super();
 	}
 	
-	public PC(HardDrive harddrive, Memory memory, Motherboard motherboard, CPU cpu){
+	public PC(CPU cpu, Motherboard motherboard, Memory memory,  HardDrive harddrive){
 		super();
 		this.harddrive = harddrive;
 		this.memory = memory;

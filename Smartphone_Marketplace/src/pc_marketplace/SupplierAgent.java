@@ -186,8 +186,7 @@ public class SupplierAgent extends MarketPlaceAgent {
 					if(ce instanceof Action) {
 						Concept action = ((Action)ce).getAction();
 						if (action instanceof Order) {						
-							
-							
+										
 							ACLMessage postComponent = new ACLMessage(ACLMessage.REQUEST);
 							postComponent.addReceiver(postman);
 							postComponent.setLanguage(codec.getName());

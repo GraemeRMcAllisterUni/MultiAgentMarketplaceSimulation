@@ -157,7 +157,7 @@ public class Postman extends MarketPlaceAgent  {
 					comp.setItem(c);
 
 					Action deliver = new Action();
-					//comp.setCustomer(myAgent.getAID());
+
 					deliver.setAction(comp);
 					deliver.setActor(manufacturerAID);
 					msg.setConversationId("delivery");
