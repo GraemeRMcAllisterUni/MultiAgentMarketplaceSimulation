@@ -188,13 +188,24 @@ public class CustomerAgent extends MarketPlaceAgent {
 							Order order = (Order) action;
 							Item it = order.getItem();
 							PC pc = (PC) it;
-							ACLMessage payment = new ACLMessage(ACLMessage.INFORM);
-							payment.addReceiver(manufacturerAID);
-							payment.setConversationId("payment");
-							String content = Double.toString(order.getPrice() * order.getQuantity());
-							payment.setContent(content);
-							send(payment);
-							System.out.println(myAgent.getName()+ " Received " + pc + " and paid " + content);
+							ACLMessage bill = new ACLMessage(ACLMessage.INFORM);
+							bill.addReceiver(manufacturerAID);
+							bill.setConversationId("payment");
+							bill.setLanguage(codec.getName());
+							bill.setOntology(ontology.getName());
+
+							Invoice payment = new Invoice( order.getPrice() * order.getQuantity() );
+							System.out.println(myAgent.getName()+ " Received " + pc + " and paid " + payment);
+							try {
+								// Let JADE convert from Java objects to string
+								getContentManager().fillContent(bill, payment); // send the wrapper object
+								send(bill);
+							} catch (CodecException ce1) {
+								ce1.printStackTrace();
+							} catch (OntologyException oe1) {
+								oe1.printStackTrace();
+							}
+
 						}
 					}
 				} catch (CodecException ce) {

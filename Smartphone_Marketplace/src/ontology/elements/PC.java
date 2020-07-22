@@ -39,7 +39,7 @@ public class PC extends Item {
 			this.cpu = cpu;
 		}
 		else
-			System.out.println("Invalid part types = requires same CPU and Mother board manucaturer");
+			System.out.println("Invalid part types = requires same CPU and Motherboard manucaturer");
 	}
 	
 	

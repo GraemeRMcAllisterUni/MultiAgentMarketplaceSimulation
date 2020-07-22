@@ -146,7 +146,7 @@ public class Postman extends MarketPlaceAgent  {
 			});			
 			if(!compSent.isEmpty())				
 			{
-				ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+				ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
 				msg.addReceiver(manufacturerAID); // sellerAID is the AID of the Seller agent
 				msg.setLanguage(codec.getName());
 				msg.setOntology(ontology.getName()); 

@@ -13,6 +13,7 @@ import jade.content.lang.Codec.CodecException;
 import jade.content.lang.sl.SLCodec;
 import jade.content.onto.Ontology;
 import jade.content.onto.OntologyException;
+import jade.content.onto.UngroundedException;
 import jade.content.onto.basic.Action;
 import jade.core.AID;
 import jade.core.Agent;
@@ -38,13 +39,13 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 	private List<AID> customerAgents = new ArrayList<>();
 	private Codec codec = new SLCodec();
 	private Ontology ontology = PCOntology.getInstance();
-	
+
 	int noOfCustomers;
 	int w;
 	int p;
 	int a;
-	
-	//double acceptableProfitMargin = 1000;
+
+	// double acceptableProfitMargin = 1000;
 
 	double Budget = 0;
 	double Profit = 0;
@@ -152,9 +153,9 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 		@Override
 		public void action() {
 			for (Order o : orderBacklog) {
-				if(o.getDueDate()!=1)
+				if (o.getDueDate() != 1)
 					o.setDueDate(o.getDueDate() - 1);
-				if(o.getDueDate()<1)
+				if (o.getDueDate() < 1)
 					o.setDueDate(1);
 			}
 			if (warehouse != null) {
@@ -185,18 +186,23 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 			ACLMessage msg = myAgent.receive(mt);
 			if (msg != null) {
 				try {
-					double payment = Double.parseDouble(msg.getContent());
+					ContentElement ce = null;
+					ce = getContentManager().extractContent(msg);
+					Invoice invoice = (Invoice) ce;
+					double payment = invoice.getMonies();
 					Profit = Profit + payment;
 					System.out.println("Manufacturer received payment of " + payment + " from "
 							+ msg.getSender().getLocalName() + " and profit now £" + Profit);
-				} catch (NumberFormatException ne) {
-					ne.printStackTrace();
+				} catch (CodecException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (OntologyException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			} else
 				block();
-
 		}
-
 	}
 
 	public class AssemblePC extends OneShotBehaviour {
@@ -317,15 +323,15 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 					serviceDesc.setType(a);
 					agentDesc.addServices(serviceDesc);
 					try {
-						ACLMessage stock = new ACLMessage(ACLMessage.REQUEST);
-						stock.setConversationId("stocklist");
+						ACLMessage supplierQuery = new ACLMessage(ACLMessage.REQUEST);
+						supplierQuery.setConversationId("stocklist");
 						DFAgentDescription[] agentsFound = DFService.search(myAgent, agentDesc);
 						suppliersFound = agentsFound.length;
 						for (DFAgentDescription aF : agentsFound) {
 							// supplierAgents.add(new ComponentSupplier(aF.getName())); // this is the AID
-							stock.addReceiver(aF.getName());
+							supplierQuery.addReceiver(aF.getName());
 						}
-						myAgent.send(stock);
+						myAgent.send(supplierQuery);
 
 					} catch (FIPAException e) {
 						e.printStackTrace();
@@ -343,7 +349,7 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 						ce = getContentManager().extractContent(msg);
 						if (ce instanceof ComponentSupplier) {
 							ComponentSupplier seller = (ComponentSupplier) ce;
-							//System.out.println(seller);
+							// System.out.println(seller);
 							supplierAgents.add(seller);
 						}
 
@@ -422,7 +428,7 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 		@Override
 		public void action() {
 
-			MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST),
+			MessageTemplate mt = MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM),
 					MessageTemplate.MatchConversationId("delivery"));
 			ACLMessage msg = receive(mt);
 			if (msg != null) {
@@ -464,7 +470,6 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 
 		PC pc = new PC();
 		Order order = new Order();
-		
 
 		@Override
 		public void action() {
@@ -494,11 +499,11 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 										orderBacklog.add(order);
 										Collections.sort(orderBacklog, new Comparator<Order>() {
 											public int compare(Order c1, Order c2) {
-												double c1Fee = ((p/(c1.getDueDate()))+(w*c1.getQuantity()));
-												double c2Fee = ((p/(c2.getDueDate()))+(w*c2.getQuantity()));
+												double c1Fee = ((p / (c1.getDueDate())) + (w * c1.getQuantity()));
+												double c2Fee = ((p / (c2.getDueDate())) + (w * c2.getQuantity()));
 												if (c1Fee < c2Fee)
 													return 1;
-												if (c1Fee> c2Fee)
+												if (c1Fee > c2Fee)
 													return -1;
 												return 0;
 											}
@@ -506,6 +511,7 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 									} else {
 										orderMsg = new ACLMessage(ACLMessage.REFUSE);
 									}
+									orderMsg.setInReplyTo(msg.toString());
 									orderMsg.addReceiver(msg.getSender());
 									myAgent.send(orderMsg);
 									ordersReceived++;
@@ -544,14 +550,11 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 						bestPrice = supplierAgents.get(i).getStock().getComponentPrice(c);
 					}
 				}
-
 				msg.addReceiver(supplierAgents.get(count).getSupplier());
 				requestOrder.setActor(supplierAgents.get(count).getSupplier());
 				supplierOrder.setPrice(supplierAgents.get(count).getStock().getComponentPrice(c));
 				msg.setConversationId("suppliesorder");
-
 				try {
-
 					requestOrder.setAction(supplierOrder);
 					getContentManager().fillContent(msg, requestOrder);
 					send(msg);
@@ -568,12 +571,10 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 		}
 
 		Boolean strategy() {
-			
+
 			double lateFeeBias = 0.2;
 			double warehouseFeeBias = 0.65;
 			double dailyQuotaBias = 2;
-
-			// Boolean accepted = true;
 			double price = order.getPrice();
 			double quantity = order.getQuantity();
 			double dueDate = order.getDueDate();
@@ -581,8 +582,6 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 			double cP;
 			double expectedProfit = 0;
 			PC pc = (PC) order.getItem();
-			// for (Component comp : pc.getComponents()) // this returns and double value in
-			// the stock list(HashMap)
 
 			double bestPrice = Double.MAX_VALUE;
 			int count = 0;
@@ -594,30 +593,25 @@ public class ManufacturerAgent extends MarketPlaceAgent {
 					bestPrice = quote;
 				}
 			}
-			
-			double dailyQuota = (( quantity/a ) * noOfCustomers);
-			
-			if(dailyQuota>noOfCustomers)
+
+			double dailyQuota = ((quantity / a) * noOfCustomers);
+
+			if (dailyQuota > noOfCustomers)
 				return false;
-			
-			double riskFactor = (( noOfCustomers * ( p * lateFeeBias ) ) + ( noOfCustomers * ( (1 + (w * (quantity * pc.getComponents().size() ))) * warehouseFeeBias ))) * (dailyQuota * dailyQuotaBias);
-				
-			//acceptableProfitMargin = acceptableProfitMargin + (riskFactor*dailyQuota);
+
+			double riskFactor = ((noOfCustomers * (p * lateFeeBias))
+					+ (noOfCustomers * ((1 + (w * (quantity * pc.getComponents().size()))) * warehouseFeeBias)))
+					* (dailyQuota * dailyQuotaBias);
 
 			componentsPrice = supplierAgents.get(count).quote(pc) * quantity;
 
 			expectedProfit = (price * quantity) - componentsPrice;
-			
 
-//			System.out.println(expectedProfit + " total price = " + price +" * "+ quantity +" - " + componentsPrice);
-//			System.out.println("expected = totalPrice:"+ expectedProfit +" - " + "Expected days fee applied:" + dd + " * fee:" + fee);
-
-			// expectedProfit = expectedProfit - (dd * fee);
 
 			if (expectedProfit < riskFactor)
 				return false;
 
-			dailyOrders.put(order, expectedProfit);
+			// dailyOrders.put(order, expectedProfit);
 			return true;
 		}
 

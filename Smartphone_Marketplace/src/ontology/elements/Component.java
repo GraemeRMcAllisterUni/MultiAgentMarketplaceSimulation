@@ -9,7 +9,6 @@ public class Component extends Item {
 		super();
 		//setId(0);
 	}
-
 	
     @Override
     public boolean equals(Object o) {
